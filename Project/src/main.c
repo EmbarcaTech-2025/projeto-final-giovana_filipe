@@ -1,4 +1,3 @@
-// main.c - BioCooler com Menu Interativo + Sensores
 #include <stdio.h>
 #include <string.h>
 #include "pico/stdlib.h"
@@ -26,13 +25,33 @@ typedef enum {
     TELA_BEM_VINDO,
     MENU_PRINCIPAL,
     MENU_TEMPERATURA,
+    MENU_PRESSAO,
     MENU_LUMINOSIDADE,
-    MENU_ACELEROMETRO
+    MENU_ACELEROMETRO,
+    MENU_FINALIZAR
 } EstadoMenu;
 
 EstadoMenu estado = TELA_BEM_VINDO;
 
-// === Display ===
+// === Desenho do coração ===
+void ssd1306_draw_heart(uint8_t *ssd, int x, int y) {
+    const uint8_t heart[8][8] = {
+        {0,1,1,0,0,1,1,0},
+        {1,1,1,1,1,1,1,1},
+        {1,1,1,1,1,1,1,1},
+        {1,1,1,1,1,1,1,1},
+        {0,1,1,1,1,1,1,0},
+        {0,0,1,1,1,1,0,0},
+        {0,0,0,1,1,0,0,0},
+        {0,0,0,0,0,0,0,0},
+    };
+    for (int i = 0; i < 8; i++)
+        for (int j = 0; j < 8; j++)
+            if (heart[i][j])
+                ssd1306_set_pixel(ssd, x + j, y + i, true);
+}
+
+// === Funções de display ===
 void display_linhas(const char* l1, const char* l2, const char* l3, const char* l4) {
     uint8_t buffer[ssd1306_buffer_length];
     struct render_area area = {0, ssd1306_width - 1, 0, ssd1306_n_pages - 1};
@@ -46,16 +65,29 @@ void display_linhas(const char* l1, const char* l2, const char* l3, const char* 
 }
 
 void ssd1306_draw_filled_rect(uint8_t *ssd, int x, int y, int w, int h) {
-    for (int i = x; i < x + w; i++) {
-        for (int j = y; j < y + h; j++) {
+    for (int i = x; i < x + w; i++)
+        for (int j = y; j < y + h; j++)
             ssd1306_set_pixel(ssd, i, j, true);
-        }
-    }
 }
 
+void display_bem_vindo_com_heart() {
+    uint8_t buffer[ssd1306_buffer_length];
+    struct render_area area = {0, ssd1306_width - 1, 0, ssd1306_n_pages - 1};
+    calculate_render_area_buffer_length(&area);
+    memset(buffer, 0, sizeof buffer);
+    ssd1306_draw_string(buffer, 20, 24, "Bem-vindos ao");
+    ssd1306_draw_string(buffer, 20, 36, "BioCooler");
+    ssd1306_draw_heart(buffer, 2, 28);
+    render_on_display(buffer, &area);
+}
 
-void display_bem_vindo() {
-    display_linhas("Bem-vindos ao", "BioCooler", "", "Pressione A para iniciar");
+void display_mensagem_central(const char* msg) {
+    uint8_t buffer[ssd1306_buffer_length];
+    struct render_area area = {0, ssd1306_width - 1, 0, ssd1306_n_pages - 1};
+    calculate_render_area_buffer_length(&area);
+    memset(buffer, 0, sizeof buffer);
+    ssd1306_draw_string(buffer, 10, 28, msg);
+    render_on_display(buffer, &area);
 }
 
 void display_menu_principal(int menu_idx) {
@@ -66,21 +98,24 @@ void display_menu_principal(int menu_idx) {
 
     ssd1306_draw_string(buffer, 0, 0, "Menu BioCooler:");
 
-    if (menu_idx == 0)
-        ssd1306_draw_filled_rect(buffer, 0, 16, 6, 8);
-    else if (menu_idx == 1)
-        ssd1306_draw_filled_rect(buffer, 0, 32, 6, 8);
-    else if (menu_idx == 2)
-        ssd1306_draw_filled_rect(buffer, 0, 48, 6, 8);
+    const char* opcoes[] = {
+        "Temperatura",
+        "PRESSAO",
+        "Luminosidade",
+        "Acelerometro",
+        "Finalizar"
+    };
 
-    ssd1306_draw_string(buffer, 10, 16, "Temperatura/Umidade");
-    ssd1306_draw_string(buffer, 10, 32, "Luminosidade");
-    ssd1306_draw_string(buffer, 10, 48, "Acelerometro");
+    for (int i = 0; i < 5; i++) {
+        if (menu_idx == i)
+            ssd1306_draw_filled_rect(buffer, 0, 16 + i * 10, 6, 8);
+        ssd1306_draw_string(buffer, 10, 16 + i * 10, opcoes[i]);
+    }
 
     render_on_display(buffer, &area);
 }
 
-
+// === Inicialização ===
 void init_display() {
     i2c_init(oled_i2c, 400000);
     gpio_set_function(SDA_OLED, GPIO_FUNC_I2C);
@@ -90,13 +125,11 @@ void init_display() {
     ssd1306_init();
 }
 
-// === Botões com debounce ===
 bool btn_a_pressionado() {
     static uint32_t ultimo_ms = 0;
     uint32_t agora = to_ms_since_boot(get_absolute_time());
-
     if (!gpio_get(BUTTON_A)) {
-        if (agora - ultimo_ms > 50) { // 200 ms de debounce
+        if (agora - ultimo_ms > 50) {
             ultimo_ms = agora;
             return true;
         }
@@ -104,28 +137,22 @@ bool btn_a_pressionado() {
     return false;
 }
 
-
-// === Joystick com controle de movimento ===
 int8_t joystick_direcao() {
     static int8_t ultimo_dir = 0;
     adc_select_input(1);
     uint16_t y = adc_read();
-
     int8_t dir = 0;
     if (y < DEADZONE) dir = 1;
     else if (y > 4000) dir = -1;
-
     if (dir != ultimo_dir && dir != 0) {
         ultimo_dir = dir;
         return dir;
     } else if (dir == 0) {
         ultimo_dir = 0;
     }
-
     return 0;
 }
 
-// === Sensores ===
 void init_luminosidade() {
     uint8_t cmd = BH1750_CONT_HRES_MODE;
     i2c_write_blocking(sensor_i2c, BH1750_ADDR, &cmd, 1, false);
@@ -153,6 +180,7 @@ void init_hw() {
     init_luminosidade();
 }
 
+// === Main ===
 int main() {
     init_hw();
     sleep_ms(1000);
@@ -161,80 +189,104 @@ int main() {
     while (1) {
         switch (estado) {
             case TELA_BEM_VINDO:
-                display_bem_vindo();
+                display_bem_vindo_com_heart();
                 sleep_ms(2000);
+
+                display_mensagem_central("Digite a senha");
                 while (!btn_a_pressionado()) sleep_ms(100);
+
+                display_mensagem_central("A iniciar transporte");
+                sleep_ms(2000);
+
                 estado = MENU_PRINCIPAL;
                 break;
 
             case MENU_PRINCIPAL: {
                 display_menu_principal(menu_idx);
-
                 int8_t dir = joystick_direcao();
-                if (dir == 1) menu_idx = (menu_idx + 2) % 3;  // cima
-                else if (dir == -1) menu_idx = (menu_idx + 1) % 3;  // baixo
+                if (dir == 1) menu_idx = (menu_idx + 4) % 5;
+                else if (dir == -1) menu_idx = (menu_idx + 1) % 5;
 
                 if (btn_a_pressionado()) {
-                    if (menu_idx == 0) estado = MENU_TEMPERATURA;
-                    else if (menu_idx == 1) estado = MENU_LUMINOSIDADE;
-                    else estado = MENU_ACELEROMETRO;
+                    switch (menu_idx) {
+                        case 0: estado = MENU_TEMPERATURA; break;
+                        case 1: estado = MENU_PRESSAO; break;
+                        case 2: estado = MENU_LUMINOSIDADE; break;
+                        case 3: estado = MENU_ACELEROMETRO; break;
+                        case 4: estado = MENU_FINALIZAR; break;
+                    }
                 }
-
-                sleep_ms(150); // reduz a velocidade de leitura
+                sleep_ms(150);
                 break;
             }
 
-case MENU_TEMPERATURA: {
-    while (1) {
-        sensors_t dados = bmp280_get_all(0x76);
-        char t[22], p[22];
-        snprintf(t, sizeof(t), "Temp: %.1f C", dados.temperature);
-        snprintf(p, sizeof(p), "Pressao: %.1f hPa", dados.pressure / 100.0);
-        display_linhas("Temperatura/Umid", t, p, "< A para voltar");
+            case MENU_TEMPERATURA: {
+                while (1) {
+                    sensors_t dados = bmp280_get_all(0x76);
+                    char t[22];
+                    snprintf(t, sizeof(t), "Temp: %.1f C", dados.temperature);
+                    display_linhas("Temperatura", t, "", "< A para voltar");
+                    if (btn_a_pressionado()) {
+                        estado = MENU_PRINCIPAL;
+                        break;
+                    }
+                    sleep_ms(200);
+                }
+                break;
+            }
 
-        if (btn_a_pressionado()) {
-            estado = MENU_PRINCIPAL;
-            break;  // sai do while
-        }
-        sleep_ms(200); // atualiza leitura a cada 200 ms
-    }
-    break;
-}
+            case MENU_PRESSAO: {
+                while (1) {
+                    sensors_t dados = bmp280_get_all(0x76);
+                    char u[22];
+                    snprintf(u, sizeof(u), "Press: %.1f hPa", dados.pressure / 100.0);
+                    display_linhas("PRESSAO", u, "", "< A para voltar");
+                    if (btn_a_pressionado()) {
+                        estado = MENU_PRINCIPAL;
+                        break;
+                    }
+                    sleep_ms(200);
+                }
+                break;
+            }
 
-
-case MENU_LUMINOSIDADE: {
-    while (1) {
-        uint16_t lux = ler_lux();
-        char luxstr[22];
-        snprintf(luxstr, sizeof(luxstr), "Luminosidade: %d lux", lux);
-        display_linhas("Sensor BH1750", luxstr, "", "< A para voltar");
-
-        if (btn_a_pressionado()) {
-            estado = MENU_PRINCIPAL;
-            break;
-        }
-        sleep_ms(200);
-    }
-    break;
-}
-
+            case MENU_LUMINOSIDADE: {
+                while (1) {
+                    uint16_t lux = ler_lux();
+                    char luxstr[22];
+                    snprintf(luxstr, sizeof(luxstr), "Luminosidade: %d lux", lux);
+                    display_linhas("Sensor BH1750", luxstr, "", "< A para voltar");
+                    if (btn_a_pressionado()) {
+                        estado = MENU_PRINCIPAL;
+                        break;
+                    }
+                    sleep_ms(200);
+                }
+                break;
+            }
 
             case MENU_ACELEROMETRO: {
-    while (1) {
-        int16_t acc[3], gyr[3], temp;
-        mpu6050_read_raw(acc, gyr, &temp);
-        char acel[22];
-        snprintf(acel, sizeof(acel), "X:%d Y:%d Z:%d", acc[0], acc[1], acc[2]);
-        display_linhas("Acelerometro", acel, "", "< A para voltar");
+                while (1) {
+                    int16_t acc[3], gyr[3], temp;
+                    mpu6050_read_raw(acc, gyr, &temp);
+                    char acel[22];
+                    snprintf(acel, sizeof(acel), "X:%d Y:%d Z:%d", acc[0], acc[1], acc[2]);
+                    display_linhas("Acelerometro", acel, "", "< A para voltar");
+                    if (btn_a_pressionado()) {
+                        estado = MENU_PRINCIPAL;
+                        break;
+                    }
+                    sleep_ms(200);
+                }
+                break;
+            }
 
-        if (btn_a_pressionado()) {
-            estado = MENU_PRINCIPAL;
-            break;
-        }
-        sleep_ms(200);
-    }
-    break;
-}
+            case MENU_FINALIZAR: {
+                display_mensagem_central("Finalizando...");
+                sleep_ms(2000);
+                estado = MENU_PRINCIPAL;
+                break;
+            }
         }
     }
 }
