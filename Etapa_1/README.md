@@ -54,17 +54,24 @@ Develop a smart thermal container prototype that:
 
 ## **Materials List**  
 
-| Item | Quantity | Description |  
-|------|----------|-------------|  
-| Thermal insulation box (8-12L) | 1 | Base container with insulation |  
-| BitDogLab (Raspberry Pi Pico W) | 1 | Microcontroller with integrated peripherals (OLED, buzzer, buttons, RGB LED) |  
-| Temperature & Pressure Sensor (BMP280) | 1 | Embedded in BitDogLab |  
-| Humidity & Temperature Sensor (SHT31) | 1 | Embedded in BitDogLab |  
-| Light Sensor (BH1750) | 1 | Embedded in BitDogLab |  
-| Accelerometer (MPU6050) | 1 | Embedded in BitDogLab |  
-| 5V Cooling Fan | 1 | Optional active cooling simulation |  
-| Power Bank / Li-ion Battery | 1 | Portable power supply |  
-| Jumper Wires & Mounting Materials | As needed | For internal connections |  
+### 🧾 Tabela 3 - Lista de Materiais 
+| Item | Quantidade | Descrição |
+|------|------------|-----------|
+| Caixa térmica de isopor (8 a 12L) | 1 | Recipiente base com isolamento térmico |
+| Placa BitDogLab com Raspberry Pi Pico W | 1 | Microcontrolador com periféricos integrados (OLED, buzzer, joystick, botões, LED RGB) |
+| Sensor de Temperatura e Pressão BMP280 | 1 | Sensor externo conectado via placa adaptadora I2C |
+| Sensor de Umidade e Temperatura AHT10 | 1 | Sensor externo conectado via placa adaptadora I2C |
+| Sensor de Luminosidade BH1750 | 1 | Sensor externo conectado via placa adaptadora I2C |
+| Acelerômetro e Giroscópio MPU6050 | 1 | Sensor externo conectado via placa adaptadora I2C |
+| Servo motor 9g SG90 | 1 | Atuador externo conectado via placa adaptadora I2C |
+| Teclado matricial 4x4 | 1 | Interface externa conectada via conector IDC direto |
+| Placa para SDCARD SPI | 1 | Módulo externo conectado via conector IDC direto |
+| Placa extensora I2C com 8 conectores XH | 1 | Permite conexão simultânea de até 7 sensores I2C |
+| Interface DVI/HDMI para BitDogLab | 1 | Conexão direta via conector IDC (2x7 pinos) |
+| Cabos customizados XH I2C | 9 | Para conexão dos sensores externos à BitDogLab |
+| Cooler pequeno (5V) | 1 | Simulação de refrigeração ativa (opcional) |
+| Fonte de energia (power bank ou bateria Li-ion) | 1 | Alimentação portátil para o sistema |
+| Fios jumper e materiais de fixação | Diversos | Para ligações e montagem interna |  
 
 ---
 
@@ -87,10 +94,7 @@ Develop a smart thermal container prototype that:
 ## **Images & Schematics**  
 
 ### **Prototype Diagram**  
-![BioSmartCooler Diagram](./assets/prototype_diagram.jpg)  
-
-### **Hardware Setup**  
-![BitDogLab Integration](./assets/hardware_setup.jpg)  
+<img width="2160" height="1185" alt="Image" src="https://github.com/user-attachments/assets/a7d93e48-f0f1-4ec6-9928-3e1170a4e038" />
 
 ---
 
