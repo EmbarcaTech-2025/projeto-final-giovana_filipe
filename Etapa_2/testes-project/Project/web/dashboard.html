@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioSmartCooler - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            color: #7f8c8d;
+            font-size: 1.2em;
+        }
+
+        .medical-icon {
+            font-size: 3em;
+            color: #e74c3c;
+            margin-bottom: 10px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+        }
+
+        .card-icon {
+            margin-right: 10px;
+            font-size: 1.5em;
+        }
+
+        .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #3498db;
+            margin: 10px 0;
+        }
+
+        .unit {
+            font-size: 0.8em;
+            color: #7f8c8d;
+        }
+
+        .status {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .status.open {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .status.closed {
+            background: #27ae60;
+            color: white;
+        }
+
+        .status.recording {
+            background: #f39c12;
+            color: white;
+        }
+
+        .status.idle {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #e67e22;
+            transform: translateY(-2px);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 15px;
+            margin: 15px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1.1em;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .chart {
+            width: 100%;
+            height: 300px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #7f8c8d;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            z-index: 100;
+        }
+
+        .connected {
+            background: #27ae60;
+            color: white;
+        }
+
+        .disconnected {
+            background: #e74c3c;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status" id="connectionStatus">
+        <span id="connectionText">Conectando...</span>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div class="medical-icon">🏥</div>
+            <h1>BioSmartCooler</h1>
+            <div class="subtitle">Sistema de Monitoramento para Transporte de Órgãos</div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3><span class="card-icon">🌡️</span>Temperatura</h3>
+                <div class="value" id="temperature">--</div>
+                <div class="unit">°C</div>
+            </div>
+
+            <div class="card">
+                <h3><span class="card-icon">💨</span>Pressão</h3>
+                <div class="value" id="pressure">--</div>
+                <div class="unit">hPa</div>
+            </div>
+
+            <div class="card">
+                <h3><span class="card-icon">💡</span>Luminosidade</h3>
+                <div class="value" id="luminosity">--</div>
+                <div class="unit">lux</div>
+            </div>
+
+            <div class="card">
+                <h3><span class="card-icon">📊</span>Umidade</h3>
+                <div class="value" id="humidity">--</div>
+                <div class="unit">%</div>
+            </div>
+
+            <div class="card">
+                <h3><span class="card-icon">📦</span>Status da Caixa</h3>
+                <div class="status" id="boxStatus">Verificando...</div>
+            </div>
+
+            <div class="card">
+                <h3><span class="card-icon">📝</span>Registros</h3>
+                <div class="value" id="totalRecords">--</div>
+                <div class="unit">total</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-success" onclick="startRecording()">
+                🎬 Iniciar Gravação
+            </button>
+            <button class="btn btn-danger" onclick="stopRecording()">
+                ⏹️ Parar Gravação
+            </button>
+            <button class="btn btn-primary" onclick="downloadCSV()">
+                📥 Download CSV
+            </button>
+            <button class="btn btn-warning" onclick="showUnlockModal()">
+                🔓 Destravar Caixa
+            </button>
+        </div>
+
+        <div class="chart-container">
+            <h3>📈 Histórico de Temperatura</h3>
+            <div class="chart" id="temperatureChart">
+                Carregando gráfico...
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para destravar caixa -->
+    <div id="unlockModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeUnlockModal()">&times;</span>
+            <h3>🔓 Destravar Caixa</h3>
+            <p>Digite a senha para destravar a caixa:</p>
+            <input type="password" id="unlockPassword" placeholder="Senha" maxlength="4">
+            <button class="btn btn-success" onclick="unlockBox()">Destravar</button>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let isRecording = false;
+        let temperatureHistory = [];
+        let lastUpdate = null;
+
+        // Inicializa conexão WebSocket
+        function initWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function() {
+                updateConnectionStatus(true);
+                console.log('WebSocket conectado');
+            };
+            
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                updateDashboard(data);
+            };
+            
+            ws.onclose = function() {
+                updateConnectionStatus(false);
+                console.log('WebSocket desconectado');
+                // Reconecta após 5 segundos
+                setTimeout(initWebSocket, 5000);
+            };
+            
+            ws.onerror = function(error) {
+                console.error('Erro WebSocket:', error);
+                updateConnectionStatus(false);
+            };
+        }
+
+        // Atualiza status de conexão
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            const text = document.getElementById('connectionText');
+            
+            if (connected) {
+                status.className = 'connection-status connected';
+                text.textContent = 'Conectado';
+            } else {
+                status.className = 'connection-status disconnected';
+                text.textContent = 'Desconectado';
+            }
+        }
+
+        // Atualiza dashboard com dados recebidos
+        function updateDashboard(data) {
+            if (data.temperatura !== undefined) {
+                document.getElementById('temperature').textContent = data.temperatura.toFixed(1);
+                updateTemperatureChart(data.temperatura);
+            }
+            
+            if (data.pressao !== undefined) {
+                document.getElementById('pressure').textContent = data.pressao.toFixed(1);
+            }
+            
+            if (data.luminosidade !== undefined) {
+                document.getElementById('luminosity').textContent = data.luminosidade;
+            }
+            
+            if (data.umidade !== undefined) {
+                document.getElementById('humidity').textContent = data.umidade;
+            }
+            
+            if (data.caixa_aberta !== undefined) {
+                const boxStatus = document.getElementById('boxStatus');
+                if (data.caixa_aberta) {
+                    boxStatus.textContent = 'ABERTA';
+                    boxStatus.className = 'status open';
+                } else {
+                    boxStatus.textContent = 'FECHADA';
+                    boxStatus.className = 'status closed';
+                }
+            }
+            
+            if (data.registros_totais !== undefined) {
+                document.getElementById('totalRecords').textContent = data.registros_totais;
+            }
+            
+            if (data.logging_ativo !== undefined) {
+                isRecording = data.logging_ativo;
+                updateRecordingButtons();
+            }
+            
+            lastUpdate = new Date();
+        }
+
+        // Atualiza gráfico de temperatura
+        function updateTemperatureChart(temperature) {
+            const now = new Date();
+            temperatureHistory.push({
+                time: now,
+                value: temperature
+            });
+            
+            // Mantém apenas os últimos 50 pontos
+            if (temperatureHistory.length > 50) {
+                temperatureHistory.shift();
+            }
+            
+            // Aqui você pode implementar um gráfico real com Chart.js ou similar
+            const chart = document.getElementById('temperatureChart');
+            chart.innerHTML = `Temperatura atual: ${temperature.toFixed(1)}°C<br>
+                             <small>Última atualização: ${now.toLocaleTimeString()}</small>`;
+        }
+
+        // Funções de controle
+        function startRecording() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({action: 'start_recording'}));
+            }
+        }
+
+        function stopRecording() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({action: 'stop_recording'}));
+            }
+        }
+
+        function downloadCSV() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({action: 'download_csv'}));
+            }
+        }
+
+        function showUnlockModal() {
+            document.getElementById('unlockModal').style.display = 'block';
+            document.getElementById('unlockPassword').focus();
+        }
+
+        function closeUnlockModal() {
+            document.getElementById('unlockModal').style.display = 'none';
+            document.getElementById('unlockPassword').value = '';
+        }
+
+        function unlockBox() {
+            const password = document.getElementById('unlockPassword').value;
+            if (password.length === 4) {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        action: 'unlock_box',
+                        password: password
+                    }));
+                }
+                closeUnlockModal();
+            } else {
+                alert('A senha deve ter 4 dígitos!');
+            }
+        }
+
+        function updateRecordingButtons() {
+            const startBtn = document.querySelector('.btn-success');
+            const stopBtn = document.querySelector('.btn-danger');
+            
+            if (isRecording) {
+                startBtn.style.display = 'none';
+                stopBtn.style.display = 'block';
+            } else {
+                startBtn.style.display = 'block';
+                stopBtn.style.display = 'none';
+            }
+        }
+
+        // Fecha modal ao clicar fora
+        window.onclick = function(event) {
+            const modal = document.getElementById('unlockModal');
+            if (event.target === modal) {
+                closeUnlockModal();
+            }
+        }
+
+        // Inicializa quando a página carrega
+        window.onload = function() {
+            initWebSocket();
+            updateRecordingButtons();
+        };
+    </script>
+</body>
+</html> 
