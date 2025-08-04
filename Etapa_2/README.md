@@ -11,9 +11,6 @@ Garantir que as condições críticas sejam mantidas durante todo o processo de 
 
 ## 🏗️ Arquitetura do Sistema
 
-
-## 🌐 Arquitetura do Sistema
-
 ### **Componentes Principais**
 
 ```
@@ -36,6 +33,7 @@ Garantir que as condições críticas sejam mantidas durante todo o processo de 
 ```
 
 
+### Componentes Principais
 
 #### 1. **Placa BitDogLab (Raspberry Pi Pico)**
 - **Processador**: Dual-core ARM Cortex-M0+ @ 133 MHz
@@ -70,7 +68,7 @@ Garantir que as condições críticas sejam mantidas durante todo o processo de 
 
 ### Diagrama de Blocos Funcional
 
-![Diagrama de Blocos Funcional](diagrama_blocos_funcional.png)
+<img width="8992" height="1092" alt="Diagrama de Blocos Funcional" src="https://github.com/user-attachments/assets/b47f25bd-b15f-4724-9c38-f186314cb247" />
 
 **Explicação do Diagrama:**
 Este diagrama mostra a arquitetura completa do sistema BioSmartCooler, dividida em blocos funcionais:
@@ -86,7 +84,7 @@ As setas indicam o fluxo de dados e controle entre os componentes, com diferente
 
 ### Diagrama de Hardware
 
-![Diagrama de Hardware](diagrama_hardware.png)
+<img width="2160" height="1185" alt="Diagrama de Hardware" src="https://github.com/user-attachments/assets/c7e41816-d1a8-413a-ba61-52ac504ece4b" />
 
 **Explicação do Diagrama:**
 Este diagrama detalha as conexões físicas e protocolos de comunicação:
@@ -101,7 +99,7 @@ Cada componente tem endereços específicos e frequências de operação otimiza
 
 ### Fluxograma Simplificado
 
-![Fluxograma Simplificado](fluxograma_simplificado.png)
+<img width="1139" height="766" alt="Fluxograma Simplificado" src="https://github.com/user-attachments/assets/70c4a23c-87f8-489c-a999-6ca89ab6805d" />
 
 **Explicação do Fluxograma:**
 Este fluxograma representa o fluxo lógico do software do BioSmartCooler:
@@ -140,14 +138,12 @@ O fluxograma mostra como o sistema responde a diferentes condições e como mant
 - **Aplicações**: LED RGB, Buzzer, Ventoinha
 - **Frequências**: 1kHz, 2kHz, 50Hz
 
-
 ### **outros protocolos de comunicação**
 
 - **HTTP/HTTPS**: Interface web (porta 80)
 - **WebSocket**: Dados em tempo real (porta 81)
 - **WiFi**: Access Point "BioSmartCooler_AP"
 - **JSON**: Formato de dados
-
 ---
 
 ## 🔄 Fluxo Operacional
@@ -207,6 +203,8 @@ O sistema inclui um dashboard web acessível via WiFi que oferece:
 - Gráficos de temperatura em tempo real
 - Notificações de alarme visuais
 
+<img width="1920" height="1080" alt="Dashboard WiFi" src="https://github.com/user-attachments/assets/0048e6da-fa7c-4615-b667-446e28239463" />
+
 ### Configuração WiFi
 
 #### **Modo Access Point (AP)**
@@ -220,7 +218,7 @@ O sistema inclui um dashboard web acessível via WiFi que oferece:
 - Configurável via interface web
 - Suporte a WPA2/WPA3
 
----
+--- 
 
 ## 💾 Sistema de Logging
 
