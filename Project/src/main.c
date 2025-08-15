@@ -51,6 +51,29 @@ void ssd1306_draw_heart(uint8_t *ssd, int x, int y) {
                 ssd1306_set_pixel(ssd, x + j, y + i, true);
 }
 
+
+// Função para desenhar um coração na matriz 5x5
+void draw_heart(uint8_t r, uint8_t g, uint8_t b) {
+    int heart[5][5] = {
+        {1, 0, 1, 0, 1},
+        {1, 1, 1, 1, 1},
+        {1, 1, 1, 1, 1},
+        {0, 1, 1, 1, 0},
+        {0, 0, 1, 0, 0}
+    };
+
+    for (int y = 0; y < MATRIX_HEIGHT; y++) {
+        for (int x = 0; x < MATRIX_WIDTH; x++) {
+            if (heart[y][x]) {
+                npSetLED(x, y, r, g, b);
+            } else {
+                npSetLED(x, y, 0, 0, 0);
+            }
+        }
+    }
+    npwrite();
+}
+
 // === Funções de display ===
 void display_linhas(const char* l1, const char* l2, const char* l3, const char* l4) {
     uint8_t buffer[ssd1306_buffer_length];
@@ -290,3 +313,4 @@ int main() {
         }
     }
 }
+
