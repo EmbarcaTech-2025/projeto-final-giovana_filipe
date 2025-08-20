@@ -35,10 +35,13 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(Projeto_Final src/main.c src/acelerometro.c src/luminosidade.c src/temperatura.c inc/mpu6050_i2c.c inc/bmp280.c inc/bmp280_low_level.c inc/ssd1306_i2c.c)
+add_executable(Projeto_Final src/main.c src/acelerometro.c src/luminosidade.c src/temperatura.c src/wifi_dashboard.c src/microsd.c inc/mpu6050_i2c.c inc/bmp280.c inc/bmp280_low_level.c inc/ssd1306_i2c.c)
 
 pico_set_program_name(Projeto_Final "Projeto_Final")
 pico_set_program_version(Projeto_Final "0.1")
+
+# Generate PIO header
+pico_generate_pio_header(Projeto_Final ${CMAKE_CURRENT_LIST_DIR}/ws2818b.pio)
 
 # Modify the below lines to enable/disable output over UART/USB
 pico_enable_stdio_uart(Projeto_Final 0)
@@ -60,6 +63,7 @@ target_link_libraries(Projeto_Final
         hardware_i2c
         hardware_adc
         hardware_pwm
+        hardware_pio
         )
 
 pico_add_extra_outputs(Projeto_Final)
