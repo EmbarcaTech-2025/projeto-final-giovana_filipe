@@ -9,6 +9,7 @@
 #include "inc/mpu6050_i2c.h"
 #include "inc/luminosidade.h"
 
+// === Definições de hardware ===
 #define SDA_OLED 14
 #define SCL_OLED 15
 #define BUTTON_A 5
@@ -18,9 +19,11 @@
 #define BH1750_ADDR 0x23
 #define BH1750_CONT_HRES_MODE 0x10
 
-i2c_inst_t *oled_i2c = i2c1;
+// === Instâncias de I2C ===
+i2c_inst_t *oled_i2c   = i2c1;
 i2c_inst_t *sensor_i2c = i2c0;
 
+// === Estados possíveis do menu ===
 typedef enum {
     TELA_BEM_VINDO,
     MENU_PRINCIPAL,
@@ -33,7 +36,11 @@ typedef enum {
 
 EstadoMenu estado = TELA_BEM_VINDO;
 
-// === Desenho do coração ===
+// ===================================================================
+//                FUNÇÕES GRÁFICAS PARA O DISPLAY
+// ===================================================================
+
+// Desenha um pequeno coração na tela (ícone 8x8)
 void ssd1306_draw_heart(uint8_t *ssd, int x, int y) {
     const uint8_t heart[8][8] = {
         {0,1,1,0,0,1,1,0},
@@ -45,77 +52,69 @@ void ssd1306_draw_heart(uint8_t *ssd, int x, int y) {
         {0,0,0,1,1,0,0,0},
         {0,0,0,0,0,0,0,0},
     };
+
     for (int i = 0; i < 8; i++)
         for (int j = 0; j < 8; j++)
             if (heart[i][j])
                 ssd1306_set_pixel(ssd, x + j, y + i, true);
 }
 
-
-// Função para desenhar um coração na matriz 5x5
-void draw_heart(uint8_t r, uint8_t g, uint8_t b) {
-    int heart[5][5] = {
-        {1, 0, 1, 0, 1},
-        {1, 1, 1, 1, 1},
-        {1, 1, 1, 1, 1},
-        {0, 1, 1, 1, 0},
-        {0, 0, 1, 0, 0}
-    };
-
-    for (int y = 0; y < MATRIX_HEIGHT; y++) {
-        for (int x = 0; x < MATRIX_WIDTH; x++) {
-            if (heart[y][x]) {
-                npSetLED(x, y, r, g, b);
-            } else {
-                npSetLED(x, y, 0, 0, 0);
-            }
-        }
-    }
-    npwrite();
-}
-
-// === Funções de display ===
+// Mostra até 4 linhas de texto
 void display_linhas(const char* l1, const char* l2, const char* l3, const char* l4) {
     uint8_t buffer[ssd1306_buffer_length];
     struct render_area area = {0, ssd1306_width - 1, 0, ssd1306_n_pages - 1};
+
     calculate_render_area_buffer_length(&area);
     memset(buffer, 0, sizeof buffer);
+
     ssd1306_draw_string(buffer, 0, 0,  l1);
     ssd1306_draw_string(buffer, 0, 16, l2);
     ssd1306_draw_string(buffer, 0, 32, l3);
     ssd1306_draw_string(buffer, 0, 48, l4);
+
     render_on_display(buffer, &area);
 }
 
+// Retângulo preenchido (usado para indicar seleção no menu)
 void ssd1306_draw_filled_rect(uint8_t *ssd, int x, int y, int w, int h) {
     for (int i = x; i < x + w; i++)
         for (int j = y; j < y + h; j++)
             ssd1306_set_pixel(ssd, i, j, true);
 }
 
+// Tela de boas-vindas com coração
 void display_bem_vindo_com_heart() {
     uint8_t buffer[ssd1306_buffer_length];
     struct render_area area = {0, ssd1306_width - 1, 0, ssd1306_n_pages - 1};
+
     calculate_render_area_buffer_length(&area);
     memset(buffer, 0, sizeof buffer);
+
     ssd1306_draw_string(buffer, 20, 24, "Bem-vindos ao");
     ssd1306_draw_string(buffer, 20, 36, "BioCooler");
     ssd1306_draw_heart(buffer, 2, 28);
+
     render_on_display(buffer, &area);
 }
 
+// Mensagem centralizada
 void display_mensagem_central(const char* msg) {
     uint8_t buffer[ssd1306_buffer_length];
     struct render_area area = {0, ssd1306_width - 1, 0, ssd1306_n_pages - 1};
+
     calculate_render_area_buffer_length(&area);
     memset(buffer, 0, sizeof buffer);
+
     ssd1306_draw_string(buffer, 10, 28, msg);
+
     render_on_display(buffer, &area);
 }
 
+// Menu principal com destaque na opção atual
 void display_menu_principal(int menu_idx) {
     uint8_t buffer[ssd1306_buffer_length];
     struct render_area area = {0, ssd1306_width - 1, 0, ssd1306_n_pages - 1};
+
     calculate_render_area_buffer_length(&area);
     memset(buffer, 0, sizeof buffer);
 
@@ -123,22 +122,28 @@ void display_menu_principal(int menu_idx) {
 
     const char* opcoes[] = {
         "Temperatura",
-        "PRESSAO",
+        "Pressao",
         "Luminosidade",
         "Acelerometro",
         "Finalizar"
     };
 
     for (int i = 0; i < 5; i++) {
-        if (menu_idx == i)
+        if (menu_idx == i)  // desenha marcador na opção atual
             ssd1306_draw_filled_rect(buffer, 0, 16 + i * 10, 6, 8);
+
         ssd1306_draw_string(buffer, 10, 16 + i * 10, opcoes[i]);
     }
 
     render_on_display(buffer, &area);
 }
 
-// === Inicialização ===
+
+// ===================================================================
+//                      FUNÇÕES DE ENTRADA
+// ===================================================================
+
+// Inicialização do display OLED
 void init_display() {
     i2c_init(oled_i2c, 400000);
     gpio_set_function(SDA_OLED, GPIO_FUNC_I2C);
@@ -148,11 +153,13 @@ void init_display() {
     ssd1306_init();
 }
 
+// Botão A com debounce
 bool btn_a_pressionado() {
     static uint32_t ultimo_ms = 0;
     uint32_t agora = to_ms_since_boot(get_absolute_time());
-    if (!gpio_get(BUTTON_A)) {
-        if (agora - ultimo_ms > 50) {
+
+    if (!gpio_get(BUTTON_A)) { // botão pressionado (nível baixo)
+        if (agora - ultimo_ms > 50) { // debounce
             ultimo_ms = agora;
             return true;
         }
@@ -160,13 +167,16 @@ bool btn_a_pressionado() {
     return false;
 }
 
+// Detecta direção do joystick (cima/baixo)
 int8_t joystick_direcao() {
     static int8_t ultimo_dir = 0;
-    adc_select_input(1);
+    adc_select_input(1);        // eixo Y do joystick
     uint16_t y = adc_read();
+
     int8_t dir = 0;
-    if (y < DEADZONE) dir = 1;
-    else if (y > 4000) dir = -1;
+    if (y < DEADZONE) dir = 1;       // para cima
+    else if (y > 4000) dir = -1;     // para baixo
+
     if (dir != ultimo_dir && dir != 0) {
         ultimo_dir = dir;
         return dir;
@@ -176,34 +186,52 @@ int8_t joystick_direcao() {
     return 0;
 }
 
+
+// ===================================================================
+//                      INICIALIZAÇÃO DE HARDWARE
+// ===================================================================
+
+// Inicializa sensor BH1750 (luminosidade)
 void init_luminosidade() {
     uint8_t cmd = BH1750_CONT_HRES_MODE;
     i2c_write_blocking(sensor_i2c, BH1750_ADDR, &cmd, 1, false);
 }
 
+// Inicialização geral do hardware
 void init_hw() {
     stdio_init_all();
+
+    // Botão A
     gpio_init(BUTTON_A);
     gpio_set_dir(BUTTON_A, GPIO_IN);
     gpio_pull_up(BUTTON_A);
+
+    // Joystick
     adc_init();
     adc_gpio_init(JOY_X);
     adc_gpio_init(JOY_Y);
+
+    // OLED
     init_display();
 
+    // I2C sensores
     i2c_init(sensor_i2c, 100000);
     gpio_set_function(0, GPIO_FUNC_I2C);
     gpio_set_function(1, GPIO_FUNC_I2C);
     gpio_pull_up(0);
     gpio_pull_up(1);
 
+    // Sensores extras
     mpu6050_setup_i2c();
     mpu6050_reset();
     bmp280_init();
     init_luminosidade();
 }
 
-// === Main ===
+
+// ===================================================================
+//                             MAIN
+// ===================================================================
 int main() {
     init_hw();
     sleep_ms(1000);
@@ -211,6 +239,8 @@ int main() {
 
     while (1) {
         switch (estado) {
+
+            // === Tela inicial ===
             case TELA_BEM_VINDO:
                 display_bem_vindo_com_heart();
                 sleep_ms(2000);
@@ -224,11 +254,13 @@ int main() {
                 estado = MENU_PRINCIPAL;
                 break;
 
+            // === Menu principal ===
             case MENU_PRINCIPAL: {
                 display_menu_principal(menu_idx);
+
                 int8_t dir = joystick_direcao();
-                if (dir == 1) menu_idx = (menu_idx + 4) % 5;
-                else if (dir == -1) menu_idx = (menu_idx + 1) % 5;
+                if (dir == 1)      menu_idx = (menu_idx + 4) % 5; // cima
+                else if (dir == -1) menu_idx = (menu_idx + 1) % 5; // baixo
 
                 if (btn_a_pressionado()) {
                     switch (menu_idx) {
@@ -243,12 +275,15 @@ int main() {
                 break;
             }
 
+            // === Menu Temperatura ===
             case MENU_TEMPERATURA: {
                 while (1) {
                     sensors_t dados = bmp280_get_all(0x76);
                     char t[22];
                     snprintf(t, sizeof(t), "Temp: %.1f C", dados.temperature);
+
                     display_linhas("Temperatura", t, "", "< A para voltar");
+
                     if (btn_a_pressionado()) {
                         estado = MENU_PRINCIPAL;
                         break;
@@ -258,12 +293,15 @@ int main() {
                 break;
             }
 
+            // === Menu Pressão ===
             case MENU_PRESSAO: {
                 while (1) {
                     sensors_t dados = bmp280_get_all(0x76);
                     char u[22];
                     snprintf(u, sizeof(u), "Press: %.1f hPa", dados.pressure / 100.0);
-                    display_linhas("PRESSAO", u, "", "< A para voltar");
+
+                    display_linhas("Pressao", u, "", "< A para voltar");
+
                     if (btn_a_pressionado()) {
                         estado = MENU_PRINCIPAL;
                         break;
@@ -273,12 +311,15 @@ int main() {
                 break;
             }
 
+            // === Menu Luminosidade ===
             case MENU_LUMINOSIDADE: {
                 while (1) {
                     uint16_t lux = ler_lux();
                     char luxstr[22];
-                    snprintf(luxstr, sizeof(luxstr), "Luminosidade: %d lux", lux);
-                    display_linhas("Sensor BH1750", luxstr, "", "< A para voltar");
+                    snprintf(luxstr, sizeof(luxstr), "Lum: %d lux", lux);
+
+                    display_linhas("BH1750", luxstr, "", "< A para voltar");
+
                     if (btn_a_pressionado()) {
                         estado = MENU_PRINCIPAL;
                         break;
@@ -288,13 +329,17 @@ int main() {
                 break;
             }
 
+            // === Menu Acelerômetro ===
             case MENU_ACELEROMETRO: {
                 while (1) {
                     int16_t acc[3], gyr[3], temp;
                     mpu6050_read_raw(acc, gyr, &temp);
+
                     char acel[22];
                     snprintf(acel, sizeof(acel), "X:%d Y:%d Z:%d", acc[0], acc[1], acc[2]);
+
                     display_linhas("Acelerometro", acel, "", "< A para voltar");
+
                     if (btn_a_pressionado()) {
                         estado = MENU_PRINCIPAL;
                         break;
@@ -304,6 +349,7 @@ int main() {
                 break;
             }
 
+            // === Finalizar ===
             case MENU_FINALIZAR: {
                 display_mensagem_central("Finalizando...");
                 sleep_ms(2000);
@@ -313,4 +359,3 @@ int main() {
         }
     }
 }
-
