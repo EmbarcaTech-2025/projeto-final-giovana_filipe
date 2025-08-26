@@ -1,0 +1,102 @@
+# Generated Cmake Pico project file
+
+cmake_minimum_required(VERSION 3.13)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Initialise pico_sdk from installed location
+# (note this can come from environment, CMake cache etc)
+
+# == DO NOT EDIT THE FOLLOWING LINES for the Raspberry Pi Pico VS Code Extension to work ==
+if(WIN32)
+    set(USERHOME $ENV{USERPROFILE})
+else()
+    set(USERHOME $ENV{HOME})
+endif()
+set(sdkVersion 2.1.1)
+set(toolchainVersion 14_2_Rel1)
+set(picotoolVersion 2.1.1)
+set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
+if (EXISTS ${picoVscode})
+    include(${picoVscode})
+endif()
+# ====================================================================================
+set(PICO_BOARD pico_w CACHE STRING "Board type")
+
+# Pull in Raspberry Pi Pico SDK (must be before project)
+include(pico_sdk_import.cmake)
+
+project(Project C CXX ASM)
+
+# Initialise the Raspberry Pi Pico SDK
+pico_sdk_init()
+
+# Add executable. Default name is the project name, version 0.1
+
+add_executable(Project src/main.c src/acelerometro.c src/luminosidade.c src/temperatura.c src/wifi_dashboard.c src/microsd.c inc/mpu6050_i2c.c inc/bmp280.c inc/bmp280_low_level.c inc/ssd1306_i2c.c firmware/wifi/wifi-connect.c firmware/dashboard/dashboard.c firmware/send-data-to-server/send-data.c)
+
+pico_set_program_name(Project "Project")
+pico_set_program_version(Project "0.1")
+
+# Generate PIO header (commented out - no PIO file exists)
+# pico_generate_pio_header(Project ${CMAKE_CURRENT_LIST_DIR}/ws2818b.pio)
+
+# Modify the below lines to enable/disable output over UART/USB
+pico_enable_stdio_uart(Project 0)
+pico_enable_stdio_usb(Project 1)
+
+# Add the standard library to the build
+target_link_libraries(Project
+        pico_stdlib)
+
+# Add the standard include files to the build
+target_include_directories(Project PRIVATE
+        ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_CURRENT_LIST_DIR}/inc
+        ${CMAKE_CURRENT_LIST_DIR}/firmware/wifi-connection
+        ${CMAKE_CURRENT_LIST_DIR}/firmware/dashboard
+        ${CMAKE_CURRENT_LIST_DIR}/firmware/send-data-to-server
+)
+
+# Add any user requested libraries
+target_link_libraries(Project 
+        hardware_pio
+        hardware_clocks
+        hardware_i2c
+        hardware_adc
+        hardware_pwm
+        hardware_pio
+        pico_multicore
+        # WiFi e dashboard libraries
+        pico_cyw43_arch_lwip_threadsafe_background
+        pico_lwip_http
+        )
+
+# Configure lwIP options
+target_compile_definitions(Project PRIVATE
+    LWIP_IPV4=1
+    LWIP_IPV6=0
+    LWIP_TCP=1
+    LWIP_UDP=1
+    LWIP_DNS=1
+    LWIP_DHCP=1
+    LWIP_AUTOIP=1
+    LWIP_HTTPD=1
+    LWIP_HTTPD_MAX_TAG_NAME_LEN=8
+    LWIP_HTTPD_MAX_TAG_INSERT_LEN=192
+    LWIP_HTTPD_POST_MAX_PAYLOAD_LEN=1024
+    MEMP_NUM_TCP_PCB=10
+    MEMP_NUM_TCP_SEG=20
+    TCP_WND=2048
+    TCP_SND_BUF=2048
+    LWIP_NETIF_HOSTNAME=1
+    LWIP_NETIF_TX_SINGLE_PBUF=1
+    LWIP_DEBUG=0
+    LWIP_STATS=0
+    TCP_TMR_INTERVAL=250
+    TCP_MSL=60000
+)
+
+pico_add_extra_outputs(Project)
