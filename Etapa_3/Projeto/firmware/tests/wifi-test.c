@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
-#include "utils/send-data-to-server/send-data.h"
-#include "utils/wifi-connection/wifi-connect.h"
+#include "firmware/send-data-to-server/send-data.h"
+#include "firmware/wifi/wifi-connect.h"
 
 int main()
 {

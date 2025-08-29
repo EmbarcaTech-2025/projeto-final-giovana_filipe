@@ -35,7 +35,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(Project src/main.c src/acelerometro.c src/luminosidade.c src/temperatura.c src/wifi_dashboard.c src/microsd.c inc/mpu6050_i2c.c inc/bmp280.c inc/bmp280_low_level.c inc/ssd1306_i2c.c firmware/wifi/wifi-connect.c firmware/dashboard/dashboard.c firmware/send-data-to-server/send-data.c)
+add_executable(Project src/main.c src/acelerometro.c src/display.c src/luminosidade.c src/temperatura.c src/wifi_dashboard.c src/microsd.c inc/mpu6050_i2c.c inc/bmp280.c inc/bmp280_low_level.c inc/ssd1306_i2c.c firmware/wifi/wifi-connect.c firmware/dashboard/dashboard.c firmware/send-data-to-server/send-data.c)
 
 pico_set_program_name(Project "Project")
 pico_set_program_version(Project "0.1")

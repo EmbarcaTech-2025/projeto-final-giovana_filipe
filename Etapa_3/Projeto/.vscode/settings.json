@@ -36,5 +36,14 @@
     "raspberry-pi-pico.cmakeAutoConfigure": true,
     "raspberry-pi-pico.useCmakeTools": false,
     "raspberry-pi-pico.cmakePath": "${HOME}/.pico-sdk/cmake/v3.31.5/bin/cmake",
-    "raspberry-pi-pico.ninjaPath": "${HOME}/.pico-sdk/ninja/v1.12.1/ninja"
+    "raspberry-pi-pico.ninjaPath": "${HOME}/.pico-sdk/ninja/v1.12.1/ninja",
+    "files.associations": {
+        "stdlib.h": "c",
+        "wifi_dashboard.h": "c",
+        "mpu6050_i2c.h": "c",
+        "ssd1306.h": "c",
+        "timer.h": "c",
+        "keypad.h": "c",
+        "dashboard.h": "c"
+    }
 }

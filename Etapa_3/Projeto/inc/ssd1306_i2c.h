@@ -7,9 +7,7 @@
 
 #define ssd1306_height 64 // Define a altura do display (32 pixels)
 #define ssd1306_width 128 // Define a largura do display (128 pixels)
-
 #define ssd1306_i2c_address _u(0x3C) // Define o endereço do i2c do display
-
 #define ssd1306_i2c_clock 400 // Define o tempo do clock (pode ser aumentado)
 
 // Comandos de configuração (endereços)

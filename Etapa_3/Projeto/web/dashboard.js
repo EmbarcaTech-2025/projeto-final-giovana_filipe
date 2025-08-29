@@ -112,7 +112,8 @@ function updateCurrentDateTime() {
 
 // Função para buscar dados dos sensores do servidor
 function fetchSensorData() {
-    const serverUrl = 'http://localhost:3000/sensores';
+    const serverUrl = `${window.location.origin}/sensores`;
+
     
     fetch(serverUrl)
         .then(response => {
