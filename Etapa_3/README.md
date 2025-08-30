@@ -1,4 +1,4 @@
-# Etapa 3 – Arquitetura e Modelagem
+# Etapa 3 – Prototipagem e Ajustes
  
 **Autores:** Filipe Alves de Sousa e Giovana Ferreira Santos
 
