@@ -1,110 +1,48 @@
-# BioSmartCooler - Sistema de Monitoramento com WiFi
+# Etapa 3 – Prototipagem e Ajustes
+ 
+**Autores:** Filipe Alves de Sousa e Giovana Ferreira Santos
 
-Este projeto implementa um sistema de monitoramento para o BioSmartCooler, utilizando um Raspberry Pi Pico W para coletar dados de sensores e enviá-los para um servidor web, que disponibiliza um dashboard para visualização em tempo real.
+**Curso:** Residência Tecnológica em Sistemas Embarcados
 
-## Estrutura do Projeto
+**Instituição:** EmbarcaTech - HBr
 
-```
-├── inc/                  # Arquivos de cabeçalho e bibliotecas
-├── src/                  # Código fonte principal
-├── utils/                # Módulos utilitários
-│   ├── dashboard/        # Módulo de dashboard
-│   ├── send-data-to-server/ # Módulo de envio de dados
-│   └── wifi-connection/  # Módulo de conexão WiFi
-├── server/               # Servidor web (Node.js/Express)
-└── web/                  # Interface web (HTML/CSS/JS)
-```
+Brasília, agosto de 2025
 
-## Componentes Principais
+---
+## 🎥 Fotos e Vídeos
 
-1. **Módulo WiFi**: Gerencia a conexão WiFi do Pico W
-2. **Módulo de Envio de Dados**: Envia dados dos sensores para o servidor
-3. **Módulo de Dashboard**: Gerencia a interface entre o Pico W e o dashboard web
-4. **Servidor Web**: Recebe dados do Pico W e disponibiliza endpoints para o dashboard
-5. **Interface Web**: Dashboard para visualização dos dados em tempo real
+Link:
 
-## Requisitos
+Fotos:
 
-### Hardware
-- Raspberry Pi Pico W
-- Sensores (BMP280, BH1750, MPU6050)
-- Display OLED
-- Servo motor
-- Botões e joystick
+- Caixa de Transporte BioCooler
+ <img width="400" height="600" alt="Caixa de Transporte BitCooler" src="https://github.com/user-attachments/assets/bf89ff4a-ce17-4172-bf99-c781dab7c1e3" />
+ 
+- DASHBOARD
+<img width="600" height="600" alt="Captura de tela 2025-08-29 222435" src="https://github.com/user-attachments/assets/727866f3-f74a-490d-901b-2291a9d7626a" />
 
-### Software
-- Pico SDK
-- Node.js e npm
-- TypeScript
 
-## Configuração
 
-### Configuração do Servidor
+## Desafios Encontrados Durante o Desenvolvimento
 
-1. Navegue até a pasta do servidor:
-   ```
-   cd server
-   ```
+O desenvolvimento do projeto da caixa inteligente apresentou desafios significativos, principalmente relacionados à integração e estabilidade da comunicação entre o microcontrolador Pico W e o dashboard web.
 
-2. Instale as dependências:
-   ```
-   npm install
-   ```
+- **Valores Nulos nos Dados dos Sensores:**:Inicialmente, os dados de temperatura, pressão e aceleração não estavam sendo atualizados no dashboard, aparecendo como zero ou com valores incorretos. A depuração revelou que os valores lidos dos sensores não estavam sendo corretamente atribuídos às variáveis que seriam enviadas.
 
-3. Inicie o servidor:
-   ```
-   npm start
-   ```
-   ou
-   ```
-   npx ts-node server.ts
-   ```
+- **Problemas de Comunicação entre Pico W e Servidor:**: O Pico W estava lendo e tentando enviar dados válidos, mas as atualizações no dashboard paravam após um curto período. A análise dos logs de depuração mostrou que o Pico W estava reportando um "Erro ao enviar dados".
 
-### Compilação do Firmware
+- **Falha no Processamento da Requisição POST**: A requisição do tipo POST enviada pelo Pico W para o servidor não era processada corretamente. A variável que armazena os dados mais recentes no servidor não era atualizada, fazendo com que o dashboard ficasse "congelado" nos últimos valores recebidos.
+  
+- **Aceleração Ausente na Visualização**: Embora os valores de aceleração bruta (eixos X, Y e Z) fossem enviados, a magnitude total da aceleração não era calculada e exibida no dashboard. A interface esperava essa informação para apresentar um valor unificado.
 
-1. Configure o ambiente de desenvolvimento do Pico SDK
 
-2. Compile o projeto:
-   ```
-   mkdir build
-   cd build
-   cmake ..
-   make
-   ```
+## Melhorias Planejadas
 
-3. Carregue o firmware no Pico W
+Para garantir a confiabilidade e a usabilidade do sistema, a equipe planeja implementar as seguintes melhorias:
 
-## Testes de Integração
+1. **Otimização do Envio de Dados**: A requisição POST será otimizada para ser mais robusta, incluindo o envio da magnitude total da aceleração como um campo separado. Isso garantirá que a informação seja exibida corretamente no dashboard.
 
-Para testar a integração entre o Pico W, o servidor e o dashboard:
+2. **Lógica de Reconexão e Retry**: No firmware do Pico W, será adicionada uma rotina de verificação e reconexão automática em caso de falha de comunicação. Isso garantirá que, se a conexão Wi-Fi for perdida, o dispositivo tentará restabelecê-la para continuar enviando os dados sem interrupções.
 
-1. Certifique-se de que o servidor está configurado
+3. **Aprimoramento da Interface de Monitoramento:**:  O dashboard será melhorado com a inclusão de um monitor de status de conexão. Ele alertará o usuário sobre a qualidade da rede e a última atualização recebida, proporcionando maior transparência sobre o estado do sistema.
 
-2. Execute o script de testes:
-   ```
-   node run-tests.js
-   ```
-
-## Uso
-
-1. Conecte o Pico W à rede WiFi configurada
-
-2. Inicie o servidor web
-
-3. Acesse o dashboard em um navegador:
-   ```
-   http://localhost:3000/dashboard.html
-   ```
-
-4. O dashboard exibirá os dados dos sensores em tempo real
-
-## Funcionalidades
-
-- Monitoramento de temperatura, pressão, luminosidade e aceleração
-- Controle de abertura/fechamento da caixa
-- Alertas para condições anormais
-- Interface web responsiva
-
-## Licença
-
-Este projeto é licenciado sob a licença MIT.
