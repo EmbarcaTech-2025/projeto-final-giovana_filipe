@@ -11,7 +11,17 @@ Brasília, agosto de 2025
 ---
 ## 🎥 Fotos e Vídeos
 
-Link: 
+Link:
+
+Fotos:
+
+- Caixa de Transporte BioCooler
+ <img width="400" height="600" alt="Caixa de Transporte BitCooler" src="https://github.com/user-attachments/assets/bf89ff4a-ce17-4172-bf99-c781dab7c1e3" />
+ 
+- DASHBOARD
+<img width="600" height="600" alt="Captura de tela 2025-08-29 222435" src="https://github.com/user-attachments/assets/727866f3-f74a-490d-901b-2291a9d7626a" />
+
+
 
 ## Desafios Encontrados Durante o Desenvolvimento
 
