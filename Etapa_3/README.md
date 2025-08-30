@@ -23,7 +23,7 @@ O desenvolvimento do projeto da caixa inteligente apresentou desafios significat
 
 - **Falha no Processamento da Requisição POST**: A requisição do tipo POST enviada pelo Pico W para o servidor não era processada corretamente. A variável que armazena os dados mais recentes no servidor não era atualizada, fazendo com que o dashboard ficasse "congelado" nos últimos valores recebidos.
   
-- **Aceleração Ausente na Visualização: **: Embora os valores de aceleração bruta (eixos X, Y e Z) fossem enviados, a magnitude total da aceleração não era calculada e exibida no dashboard. A interface esperava essa informação para apresentar um valor unificado.
+- **Aceleração Ausente na Visualização**: Embora os valores de aceleração bruta (eixos X, Y e Z) fossem enviados, a magnitude total da aceleração não era calculada e exibida no dashboard. A interface esperava essa informação para apresentar um valor unificado.
 
 
 ## Melhorias Planejadas
