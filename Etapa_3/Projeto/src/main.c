@@ -1106,6 +1106,8 @@ int main()
             strncpy(sensor_data.data_hora, data_hora, sizeof(sensor_data.data_hora) - 1);
             sensor_data.data_hora[sizeof(sensor_data.data_hora) - 1] = '\0';
 
+
+            
             // Enviar dados para o dashboard
             dashboard_update_sensor_data(&sensor_data);
 

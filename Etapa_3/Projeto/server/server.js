@@ -123,5 +123,4 @@ function processarComando(comando, params) {
 app.listen(PORT, '::', () => {
     console.log(`Servidor rodando na porta ${PORT} (IPv4)`);
     console.log(`Acesse o dashboard em: http://localhost:${PORT}/`);
-    console.log(`Acesse o dashboard em: http://localhost:${PORT}/`);
 });

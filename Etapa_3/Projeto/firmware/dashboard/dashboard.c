@@ -41,7 +41,7 @@ bool dashboard_update_sensor_data(const sensor_data_t *data) {
         data->temperatura, data->pressao, data->luminosidade, data->aceleracao_x, data->aceleracao_y, data->aceleracao_z, data->caixa_aberta, data->tempo_entrega_ms, data->tempo_restante_ms, data->alerta_tempo_min, data->alerta_temp_ativo, data->alerta_acel_ativo, data->alarme_tempo_ativo, data->alerta_tempo_ativo, data->data_hora);
     
     // Também imprime o JSON gerado
-    snprintf(json_data, sizeof(json_data),
+ snprintf(json_data, sizeof(json_data),
              "{"
              "\"temperatura\": %.2f,"
              "\"pressao\": %.2f,"
