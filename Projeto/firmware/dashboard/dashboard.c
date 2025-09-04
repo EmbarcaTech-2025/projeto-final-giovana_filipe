@@ -35,48 +35,13 @@ bool dashboard_update_sensor_data(const sensor_data_t *data) {
     // Copia os dados para a variável global
     memcpy(&last_sensor_data, data, sizeof(sensor_data_t));
     
-    // Prepara o JSON com os dados dos sensores
-    char json_data[768]; // Aumentado para acomodar os novos campos
-    printf("[DASHBOARD] Enviando dados para o servidor: temperatura=%.2f, pressao=%.2f, luminosidade=%u, accel_x=%d, accel_y=%d, accel_z=%d, caixa_aberta=%d, tempo_entrega_ms=%u, tempo_restante_ms=%u, alerta_tempo_min=%u, alerta_temp_ativo=%d, alerta_acel_ativo=%d, alarme_tempo_ativo=%d, alerta_tempo_ativo=%d, data_hora=%s\n",
-        data->temperatura, data->pressao, data->luminosidade, data->aceleracao_x, data->aceleracao_y, data->aceleracao_z, data->caixa_aberta, data->tempo_entrega_ms, data->tempo_restante_ms, data->alerta_tempo_min, data->alerta_temp_ativo, data->alerta_acel_ativo, data->alarme_tempo_ativo, data->alerta_tempo_ativo, data->data_hora);
-    
-    // CORREÇÃO: Passar os valores de aceleração para a função snprintf
- snprintf(json_data, sizeof(json_data),
-             "{"
-             "\"temperatura\": %.2f,"
-             "\"pressao\": %.2f,"
-             "\"luminosidade\": %u,"
-             "\"aceleracao_x\": %d,"
-             "\"aceleracao_y\": %d,"
-             "\"aceleracao_z\": %d,"
-             "\"caixa_aberta\": %s,"
-             "\"tempo_entrega_ms\": %u,"
-             "\"tempo_restante_ms\": %u,"
-             "\"alerta_tempo_min\": %u,"
-             "\"alerta_temp_ativo\": %s,"
-             "\"alerta_acel_ativo\": %s,"
-             "\"alarme_tempo_ativo\": %s,"
-             "\"alerta_tempo_ativo\": %s,"
-             "\"data_hora\": \"%s\""
-             "}",
-             data->temperatura,
-             data->pressao,
-             data->luminosidade,
-             data->aceleracao_x, // Argumento CORRIGIDO
-             data->aceleracao_y, // Argumento CORRIGIDO
-             data->aceleracao_z, // Argumento CORRIGIDO
-             data->caixa_aberta ? "true" : "false",
-             data->tempo_entrega_ms,
-             data->tempo_restante_ms,
-             data->alerta_tempo_min,
-             data->alerta_temp_ativo ? "true" : "false",
-             data->alerta_acel_ativo ? "true" : "false",
-             data->alarme_tempo_ativo ? "true" : "false",
-             data->alerta_tempo_ativo ? "true" : "false",
-             data->data_hora);
-    
-    // Envia os dados para o servidor
-    send_data_to_server("/sensores", json_data, "POST");
+    // CORREÇÃO: Chamar a função send_sensor_data em vez de construir o JSON manualmente
+    printf("[DASHBOARD] Enviando dados para o servidor: temperatura=%.2f, pressao=%.2f, luminosidade=%u, accel_x=%d, accel_y=%d, accel_z=%d, caixa_aberta=%d\n",
+        data->temperatura, data->pressao, data->luminosidade, data->aceleracao_x, data->aceleracao_y, data->aceleracao_z, data->caixa_aberta);
+
+    send_sensor_data(data->temperatura, data->pressao, data->luminosidade,
+                     data->aceleracao_x, data->aceleracao_y, data->aceleracao_z,
+                     data->caixa_aberta);
     
     return true;
 }
