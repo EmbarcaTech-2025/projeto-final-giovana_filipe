@@ -8,20 +8,24 @@
 typedef struct {
     float temperatura;
     float pressao;
+    float umidade;              // << NOVO
     uint16_t luminosidade;
     int16_t aceleracao_x;
     int16_t aceleracao_y;
     int16_t aceleracao_z;
+    float aceleracao_total;
     bool caixa_aberta;
-    // Novos campos para o contador de tempo e alertas
-    uint32_t tempo_entrega_ms;      // Tempo configurado para entrega em milissegundos
-    uint32_t tempo_restante_ms;     // Tempo restante para entrega em milissegundos
-    uint32_t alerta_tempo_min;      // Minutos antes do fim para acionar alerta
-    bool alerta_temp_ativo;         // Indica se o alerta de temperatura está ativo
-    bool alerta_acel_ativo;         // Indica se o alerta de aceleração está ativo
-    bool alarme_tempo_ativo;        // Indica se o alarme de tempo está ativo
-    bool alerta_tempo_ativo;        // Indica se o alerta de tempo está ativo
-    char data_hora[24];             // String com data e hora atual (formato: YYYY-MM-DD HH:MM:SS)
+    uint32_t tempo_entrega_ms;
+    uint32_t tempo_restante_ms;
+    uint32_t alerta_tempo_min;
+    bool alerta_temp_ativo;
+    bool alerta_acel_ativo;
+    bool alarme_tempo_ativo;
+    bool alerta_tempo_ativo;
+    char data_hora[24];
+    char led_status[16];
+    int total_registros;
+    uint32_t tempo_decorrido_ms; // NOVO: tempo cronometrado em ms
 } sensor_data_t;
 
 // Inicializa o módulo de dashboard

@@ -3,17 +3,20 @@
 
 #include "pico/stdlib.h"
 
-// Inicializa teclado matricial
-void init_keypad(void);
+// === Definições do teclado matricial ===
+#define KEYPAD_ROW1 4   // GPIO08
+#define KEYPAD_ROW2 8   // GPIO09
+#define KEYPAD_ROW3 9   // GPIO04
+#define KEYPAD_ROW4 16  // GPIO20
+#define KEYPAD_COL1 17  // GPIO19
+#define KEYPAD_COL2 18  // GPIO18
+#define KEYPAD_COL3 19  // GPIO16
+#define KEYPAD_COL4 20  // GPIO17
 
-// Lê tecla pressionada (retorna '\0' se nada)
+extern char keypad_keys[4][4];
+
+void keypad_init();
+char keypad_get_key();
 char read_keypad(void);
-
-// Funções relacionadas à senha
-void reset_senha(void);
-bool adicionar_digito(char tecla);
-bool verificar_senha(void);
-const char *get_senha_digitada(void);
-int get_senha_pos(void);
 
 #endif

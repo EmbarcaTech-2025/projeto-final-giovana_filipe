@@ -17,14 +17,15 @@ app.get('/', (req, res) => {
 });
 
 // Armazenar os dados mais recentes dos sensores
-
 let ultimosDados = {
     temperatura: 0,
     pressao: 0,
+    umidade: 0, // <-- Adicione esta linha
     luminosidade: 0,
     aceleracao_x: 0,
     aceleracao_y: 0,
     aceleracao_z: 0,
+    aceleracao_total: 0,
     caixa_aberta: false,
     tempo_entrega_ms: 0,
     tempo_restante_ms: 0,
@@ -34,8 +35,16 @@ let ultimosDados = {
     alarme_tempo_ativo: false,
     alerta_tempo_ativo: false,
     data_hora: '',
+    led_status: 'all_off',
+    registros_totais: 0,
+    tempo_decorrido_ms: 0, // <-- Adicionado para o cronômetro
     timestamp: new Date()
 };
+
+// Armazenar o histórico de temperatura
+let historicoTemperatura = [];
+// Armazenar o histórico completo de todos os dados
+let historicoCompleto = [];
 
 app.post('/receber', (req, res) => {
     const { dado } = req.body;
@@ -45,14 +54,15 @@ app.post('/receber', (req, res) => {
 
 app.post('/sensores', (req, res) => {
     console.log('[POST /sensores] Body recebido:', req.body);
-    // Copiar todos os campos relevantes do body para ultimosDados
     ultimosDados = {
         temperatura: req.body.temperatura ?? 0,
         pressao: req.body.pressao ?? 0,
+        umidade: req.body.umidade ?? 0, // <-- Adicione esta linha
         luminosidade: req.body.luminosidade ?? 0,
         aceleracao_x: req.body.aceleracao_x ?? 0,
         aceleracao_y: req.body.aceleracao_y ?? 0,
         aceleracao_z: req.body.aceleracao_z ?? 0,
+        aceleracao_total: req.body.aceleracao_total ?? 0,
         caixa_aberta: req.body.caixa_aberta ?? false,
         tempo_entrega_ms: req.body.tempo_entrega_ms ?? 0,
         tempo_restante_ms: req.body.tempo_restante_ms ?? 0,
@@ -62,8 +72,22 @@ app.post('/sensores', (req, res) => {
         alarme_tempo_ativo: req.body.alarme_tempo_ativo ?? false,
         alerta_tempo_ativo: req.body.alerta_tempo_ativo ?? false,
         data_hora: req.body.data_hora ?? '',
+        led_status: req.body.led_status ?? 'all_off',
+        registros_totais: req.body.registros_totais ?? 0,
+        tempo_decorrido_ms: req.body.tempo_decorrido_ms ?? 0, // <-- Adicionado para o cronômetro
         timestamp: new Date()
     };
+    // Adiciona temperatura ao histórico
+    historicoTemperatura.push({
+        temperatura: ultimosDados.temperatura,
+        timestamp: new Date()
+    });
+    // Limita o histórico a 500 pontos
+    if (historicoTemperatura.length > 500) historicoTemperatura.shift();
+    // Adiciona todos os dados ao histórico completo
+    historicoCompleto.push({ ...ultimosDados });
+    // Limita o histórico completo a 2000 pontos
+    if (historicoCompleto.length > 2000) historicoCompleto.shift();
     console.log('[POST /sensores] ultimosDados atualizado:', ultimosDados);
     res.send('Dados dos sensores recebidos com sucesso!');
 });
@@ -71,6 +95,30 @@ app.post('/sensores', (req, res) => {
 app.get('/sensores', (req, res) => {
     console.log('[GET /sensores] ultimosDados enviado:', ultimosDados);
     res.json(ultimosDados);
+});
+
+// Endpoint para obter o histórico de temperatura
+app.get('/historico-temperatura', (req, res) => {
+    res.json(historicoTemperatura);
+});
+
+// Endpoint para download do histórico em CSV
+app.get('/historico-csv', (req, res) => {
+    if (historicoCompleto.length === 0) {
+        return res.status(204).send('Sem dados para exportar');
+    }
+    // Cabeçalho CSV
+    const header = Object.keys(historicoCompleto[0]).join(',');
+    // Linhas CSV
+    const rows = historicoCompleto.map(obj =>
+        Object.values(obj).map(v =>
+            typeof v === 'string' ? '"' + v.replace(/"/g, '""') + '"' : v
+        ).join(',')
+    );
+    const csv = [header, ...rows].join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="historico_transporte.csv"');
+    res.send(csv);
 });
 
 app.post('/comando', (req, res) => {

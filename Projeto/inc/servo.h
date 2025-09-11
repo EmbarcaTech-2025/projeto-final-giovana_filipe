@@ -3,6 +3,7 @@
 
 #include "pico/stdlib.h"
 
+// Pino do servo
 #define SERVO_PIN 2
 
 void init_servo();

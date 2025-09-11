@@ -19,13 +19,16 @@ app.get('/', (req: Request, res: Response) => {
 let ultimosDados = {
     temperatura: 0,
     pressao: 0,
+    umidade: 0, 
     luminosidade: 0,
     aceleracao: {
         x: 0,
         y: 0,
         z: 0
     },
+    aceleracao_total: 0, // <-- Se quiser mostrar no dashboard
     caixaAberta: false,
+    tempo_decorrido_ms: 0, // NOVO campo para o cronômetro
     timestamp: new Date()
 };
 
@@ -38,22 +41,24 @@ app.post('/receber', (req: Request, res: Response) => {
 
 // Novo endpoint para receber dados dos sensores
 app.post('/sensores', (req: Request, res: Response) => {
-    const { temperatura, pressao, luminosidade, aceleracao_x, aceleracao_y, aceleracao_z, caixa_aberta } = req.body;
-    
-    // Atualizar os dados mais recentes
+    const { temperatura, pressao, umidade, luminosidade, aceleracao_x, aceleracao_y, aceleracao_z, aceleracao_total, caixa_aberta, tempo_decorrido_ms } = req.body;
+
     ultimosDados = {
         temperatura,
         pressao,
+        umidade,
         luminosidade,
         aceleracao: {
             x: aceleracao_x,
             y: aceleracao_y,
             z: aceleracao_z
         },
+        aceleracao_total,
         caixaAberta: caixa_aberta,
+        tempo_decorrido_ms: tempo_decorrido_ms ?? 0,
         timestamp: new Date()
     };
-    
+
     console.log('Dados dos sensores recebidos:', ultimosDados);
     res.send('Dados dos sensores recebidos com sucesso!');
 });

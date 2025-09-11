@@ -14,20 +14,18 @@
 #include "inc/display.h"
 #include "inc/wifi_dashboard.h"
 #include "inc/bmp280_defs.h"
+#include "inc/servo.h"
+#include "inc/aht10.h"
+#include "inc/estado_caixa.h"
 #include "firmware/wifi/wifi-connect.h"
 #include "firmware/dashboard/dashboard.h"
-#include "servo.h"
-#include "inc/estado_caixa.h"
+
 
 // Declarações antecipadas de funções para o LED RGB
 void init_led_rgb();
 void led_rgb_set(bool r, bool g, bool b);
 void led_vermelho(bool estado);
 void led_verde(bool estado);
-void led_azul(bool estado);
-void led_amarelo(bool estado);
-void led_ciano(bool estado);
-void led_magenta(bool estado);
 void led_branco(bool estado);
 void led_desligado(void);
 
@@ -80,15 +78,12 @@ uint32_t alerta_tempo_min = 10;      // Minutos antes do fim para acionar alerta
 bool alarme_tempo_ativo = false;     // Indica se o alarme de tempo está ativo
 bool alerta_tempo_disparado = false; // Indica se o alerta de tempo já foi disparado
 
-
 // === Variáveis para controle de alertas ===
 #define TEMP_MAXIMA 30.0         // Temperatura máxima em °C
 #define ACEL_MAXIMA 1.5          // Aceleração máxima em g (1g = 9.8 m/s²)
 bool alerta_temp_ativo = false;  // Indica se o alerta de temperatura está ativo
 bool alerta_acel_ativo = false;  // Indica se o alerta de aceleração está ativo
 bool alerta_tempo_ativo = false; // Indica se o alerta de tempo está ativo
-
-// Declarações de funções para o LED RGB já foram feitas anteriormente
 
 // === Variáveis para controle de data e hora ===
 char data_hora_atual[24]; // String com data e hora atual (formato: YYYY-MM-DD HH:MM:SS)
@@ -132,14 +127,14 @@ void verificar_alerta_tempo(void)
         {
             alerta_tempo_disparado = true;
             alerta_tempo_ativo = true;
-            led_azul(true);   // LED azul para alerta de tempo
+            led_vermelho(true);   
             buzzer_alarme(1); // 1 beep para tempo
         }
         else if (tempo_restante_ms == 0 && !alarme_tempo_ativo)
         {
             // Tempo esgotado, acionar alarme final
             alarme_tempo_ativo = true;
-            led_magenta(true); // LED magenta para tempo esgotado
+            led_vermelho(true); // LED magenta para tempo esgotado
             buzzer_alarme(5);  // 5 beeps para tempo esgotado
         }
         else if (tempo_restante_ms > limite_alerta && alerta_tempo_disparado)
@@ -157,7 +152,7 @@ void verificar_alerta_tempo(void)
             }
             else if (alerta_acel_ativo)
             {
-                led_amarelo(true); // Restaura LED amarelo se aceleração ainda alta
+                led_vermelho(true); // Restaura LED amarelo se aceleração ainda alta
             }
         }
     }
@@ -188,24 +183,28 @@ void atualizar_data_hora()
 }
 
 // Função para atualizar os dados dos sensores no dashboard
-void atualizar_dashboard(float temperatura, float pressao, uint16_t luminosidade,
+void atualizar_dashboard(float temperatura, float pressao, float umidade,
+                         uint16_t luminosidade,
                          int16_t accel_x, int16_t accel_y, int16_t accel_z,
-                         bool caixa_aberta)
+                         float aceleracao_total, bool caixa_aberta, const char *led_status)
 {
-    // Atualizar data e hora
+    // Atualizar data e hora (seu código já tem função)
     atualizar_data_hora();
 
-    // Verificar alertas
-    // verificar_alertas(temperatura, accel_x, accel_y, accel_z); // Função removida
-
-    // Criar estrutura com os dados dos sensores
+    uint32_t tempo_decorrido_ms = 0;
+    if (tempo_inicio_ms > 0) {
+        uint32_t agora = to_ms_since_boot(get_absolute_time());
+        tempo_decorrido_ms = agora - tempo_inicio_ms;
+    }
     sensor_data_t sensor_data = {
         .temperatura = temperatura,
         .pressao = pressao,
+        .umidade = umidade,
         .luminosidade = luminosidade,
         .aceleracao_x = accel_x,
         .aceleracao_y = accel_y,
         .aceleracao_z = accel_z,
+        .aceleracao_total = aceleracao_total,
         .caixa_aberta = caixa_aberta,
         .tempo_entrega_ms = tempo_entrega_ms,
         .tempo_restante_ms = tempo_restante_ms,
@@ -214,14 +213,21 @@ void atualizar_dashboard(float temperatura, float pressao, uint16_t luminosidade
         .alerta_acel_ativo = alerta_acel_ativo,
         .alarme_tempo_ativo = alarme_tempo_ativo,
         .alerta_tempo_ativo = alerta_tempo_ativo,
-        .data_hora = {0}};
+        .data_hora = {0},
+        .led_status = {0},
+        .total_registros = 0,
+        .tempo_decorrido_ms = tempo_decorrido_ms
+    };
 
     // Copiar a string de data e hora
     strncpy(sensor_data.data_hora, data_hora_atual, sizeof(sensor_data.data_hora) - 1);
 
-    // Atualizar os dados no dashboard
+    // Copiar led status
+    strncpy(sensor_data.led_status, led_status, sizeof(sensor_data.led_status) - 1);
+
     dashboard_update_sensor_data(&sensor_data);
 }
+
 
 // Declarações de funções para o buzzer
 void init_buzzer(void);
@@ -229,7 +235,6 @@ void buzzer_on(void);
 void buzzer_off(void);
 void buzzer_beep(uint32_t duracao_ms);
 void buzzer_alarme(uint32_t duracao_ms);
-
 
 // ===================================================================
 //                FUNÇÕES GRÁFICAS PARA O DISPLAY
@@ -242,6 +247,7 @@ void mostrar_dados_sensores(const sensor_data_t *data)
         return;
     printf("=== Dados dos Sensores ===\n");
     printf("Temperatura: %.2f °C\n", data->temperatura);
+    printf("Humidade: %.2f °C\n", data->umidade);
     printf("Pressao: %.2f hPa\n", data->pressao);
     printf("Luminosidade: %u lux\n", data->luminosidade);
     printf("Aceleracao X: %d\n", data->aceleracao_x);
@@ -286,50 +292,6 @@ bool btn_b_pressionado()
         }
     }
     return false;
-}
-
-// Função para travar ou destravar a tampa da caixa
-void travar_tampa_da_caixa()
-{
-    // Ler o valor atual do sensor de luminosidade
-    float lux = get_luminosidade();
-
-    // Verificar se a caixa está fechada (luminosidade baixa)
-    if (lux < 10)
-    {
-        // Se a caixa estiver fechada e não travada, travar
-        if (estado_caixa == CAIXA_FECHADA)
-        {
-            servo_travar();
-            estado_caixa = CAIXA_FECHADA_TRAVADA;
-            display_mensagem_central("Tampa travada");
-            // Atualizar status no dashboard Wi-Fi
-            wifi_dashboard_update_box_status(false);
-            sleep_ms(1000);
-        }
-        // Se a caixa estiver fechada e travada, destravar
-        else if (estado_caixa == CAIXA_FECHADA_TRAVADA)
-        {
-            servo_destravar();
-            estado_caixa = CAIXA_FECHADA;
-            display_mensagem_central("Tampa destravada");
-            // Atualizar status no dashboard Wi-Fi
-            wifi_dashboard_update_box_status(false);
-            sleep_ms(1000);
-        }
-    }
-    else
-    {
-        // Se a caixa estiver aberta, não pode travar
-        if (estado_caixa != CAIXA_ABERTA)
-        {
-            estado_caixa = CAIXA_ABERTA;
-            // Atualizar status no dashboard Wi-Fi
-            wifi_dashboard_update_box_status(true);
-        }
-        display_mensagem_central("Caixa aberta!\nFeche para travar");
-        sleep_ms(1000);
-    }
 }
 
 // Detecta direção do joystick (cima/baixo)
@@ -579,7 +541,6 @@ void atualizar_alertas(float temperatura, float aceleracao_total)
         alerta_temp_ativo = true;
         alerta_acionado = true;
         ultimo_alerta_temp = agora_temp;
-        led_vermelho(true); // LED vermelho para temperatura alta
 
         // Calcular duração do alarme baseado na intensidade da temperatura
         uint32_t duracao_alarme = 2000 + (uint32_t)((temperatura - TEMP_MAXIMA) * 200);
@@ -618,7 +579,6 @@ void atualizar_alertas(float temperatura, float aceleracao_total)
             alerta_acel_ativo = true;
             alerta_acionado = true;
             ultimo_alerta_acel = agora;
-            led_amarelo(true); // LED amarelo para movimento brusco
 
             // Padrão de alerta sonoro específico para movimento brusco
             // Sequência de beeps rápidos com duração proporcional à intensidade do movimento
@@ -655,7 +615,6 @@ void atualizar_alertas(float temperatura, float aceleracao_total)
         if (tempo_restante_ms > 0 && tempo_restante_ms <= tempo_alerta_ms)
         {
             alerta_acionado = true;
-            led_azul(true); // LED azul para alerta de tempo
 
             // Emitir alerta sonoro a cada 10 segundos quando estiver na zona de alerta
             if (agora_tempo - ultimo_alerta_tempo > 10000)
@@ -678,7 +637,6 @@ void atualizar_alertas(float temperatura, float aceleracao_total)
         if (tempo_restante_ms == 0)
         {
             alerta_acionado = true;
-            led_magenta(true); // LED magenta para tempo esgotado
 
             // Emitir alarme final apenas uma vez
             if (!ultimo_alerta_tempo || agora_tempo - ultimo_alerta_tempo > 5000)
@@ -696,17 +654,13 @@ void atualizar_alertas(float temperatura, float aceleracao_total)
         }
     }
 
-    // Se nenhum alerta estiver ativo, retorna o LED para o estado normal
-    if (!alerta_temp_ativo && !alerta_acel_ativo && !alerta_acionado)
-    {
-        if (alarme_tempo_ativo)
-        {
-            led_verde(true); // Verde quando timer está ativo sem alertas
-        }
-        else
-        {
-            led_desligado(); // Desliga o LED quando não há alertas ou timer
-        }
+    // Gerenciamento do LED RGB
+    if (alerta_temp_ativo || alerta_acel_ativo || (alarme_tempo_ativo && tempo_restante_ms <= alerta_tempo_min * 60 * 1000)) {
+        led_vermelho(true); // Se qualquer alerta estiver ativo, acende o LED vermelho
+    } else if (alarme_tempo_ativo) {
+        led_verde(true); // Se o timer estiver ativo e não houver outros alertas, acende o LED verde
+    } else {
+        led_desligado(); // Desliga o LED quando não há alertas ou timer
     }
 }
 
@@ -742,26 +696,6 @@ void led_vermelho(bool estado)
 void led_verde(bool estado)
 {
     led_rgb_set(false, estado, false);
-}
-
-void led_azul(bool estado)
-{
-    led_rgb_set(false, false, estado);
-}
-
-void led_amarelo(bool estado)
-{
-    led_rgb_set(estado, estado, false);
-}
-
-void led_ciano(bool estado)
-{
-    led_rgb_set(false, estado, estado);
-}
-
-void led_magenta(bool estado)
-{
-    led_rgb_set(estado, false, estado);
 }
 
 void led_branco(bool estado)
@@ -810,9 +744,10 @@ void init_hw_without_display()
     mpu6050_reset();
     bmp280_init();
     init_luminosidade();
+    aht10_init(sensor_i2c);
 
     // Teclado matricial
-    init_keypad();
+    keypad_init();
 
     // Servomotor
     init_servo();
@@ -830,15 +765,20 @@ void init_hw_without_display()
 int main()
 {
     stdio_init_all();
+    printf("[DEBUG] Iniciando main()...\n");
     init_display();
+    printf("[DEBUG] Display inicializado\n");
     clear_display();
     display_bem_vindo();
+    printf("[DEBUG] Tela de boas-vindas exibida\n");
     // Agora inicializar o resto do hardware em background
     init_hw_without_display(); // Você precisará criar esta função
+    printf("[DEBUG] init_hw_without_display() executado\n");
 
     sleep_ms(800);
     clear_display();
     display_mensagem_central("Iniciando...");
+    printf("[DEBUG] Mensagem 'Iniciando...' exibida\n");
 
     // Inicializar Wi-Fi usando o novo módulo
     if (init_wifi())
@@ -864,8 +804,10 @@ int main()
     uint32_t ultimo_envio_dashboard = 0;
     const uint32_t intervalo_envio_dashboard = 3000; // Enviar dados a cada 3 segundos
 
+    printf("[DEBUG] Entrando no while(1)\n");
     while (1)
     {
+        printf("[DEBUG] Loop while(1), estado = %d\n", estado);
         // Verificar se é hora de enviar dados para o dashboard
         uint32_t agora = to_ms_since_boot(get_absolute_time());
 
@@ -897,24 +839,47 @@ int main()
             // Calcular aceleração total (magnitude do vetor)
             float accel_total = sqrtf((float)(acc[0] * acc[0] + acc[1] * acc[1] + acc[2] * acc[2])) / 16384.0f;
 
+            // Ler umidade do AHT10
+            float umidade = 0.0f;
+            float temp_aht = 0.0f;
+            if (!aht10_read_data(sensor_i2c, &umidade, &temp_aht)) {
+                // Se falhar, mantém valor anterior (ou zero)
+                umidade = 0.0f;
+            }
+
             // Verificar alertas (temperatura, aceleração e tempo)
             atualizar_alertas(temperatura, accel_total);
 
             // Verificar se a caixa está aberta ou fechada
             bool caixa_aberta = (estado_caixa == CAIXA_ABERTA);
 
+            // Obter status do LED para enviar ao dashboard
+            const char* led_status = "all_off";
+            if (alerta_temp_ativo || alerta_acel_ativo) {
+                led_status = "danger";
+            } else if (alarme_tempo_ativo) {
+                led_status = "normal";
+            }
+
             // Obter data e hora atual
             char data_hora[24];
             obter_data_hora_atual(data_hora, sizeof(data_hora));
 
             // Atualizar o dashboard
+            // Calcular tempo decorrido desde o início do transporte
+            uint32_t tempo_decorrido_ms = 0;
+            if (tempo_inicio_ms > 0) {
+                tempo_decorrido_ms = agora - tempo_inicio_ms;
+            }
             sensor_data_t sensor_data = {
                 .temperatura = temperatura,
                 .pressao = pressao / 100.0, // A pressão precisa ser convertida de Pa para hPa
+                .umidade = umidade,
                 .luminosidade = luminosidade,
                 .aceleracao_x = acc[0],
                 .aceleracao_y = acc[1],
                 .aceleracao_z = acc[2],
+                .aceleracao_total = accel_total, // Novo campo
                 .caixa_aberta = caixa_aberta,
                 .tempo_entrega_ms = tempo_entrega_ms,
                 .tempo_restante_ms = tempo_restante_ms,
@@ -923,31 +888,25 @@ int main()
                 .alerta_acel_ativo = alerta_acel_ativo,
                 .alarme_tempo_ativo = alarme_tempo_ativo,
                 .alerta_tempo_ativo = alerta_tempo_ativo,
+                .tempo_decorrido_ms = tempo_decorrido_ms,
             };
 
             // Copiar a data e hora
             strncpy(sensor_data.data_hora, data_hora, sizeof(sensor_data.data_hora) - 1);
             sensor_data.data_hora[sizeof(sensor_data.data_hora) - 1] = '\0';
 
+            // Copiar o status do LED
+            strncpy(sensor_data.led_status, led_status, sizeof(sensor_data.led_status) - 1);
 
-            
             // Enviar dados para o dashboard
             dashboard_update_sensor_data(&sensor_data);
 
             ultimo_envio_dashboard = agora;
         }
-        // Debug: testar teclado
-char tecla_debug = read_keypad();
-if (tecla_debug != '\0') {
-    printf("DEBUG >> Tecla pressionada: %c\n", tecla_debug);
-    // Também pode mostrar no display:
-    char msg[20];
-    snprintf(msg, sizeof(msg), "Tecla: %c", tecla_debug);
-    display_mensagem_central(msg);
-    sleep_ms(300); // debounce + tempo de leitura no display
-}
         switch (estado)
         {
+            
+
         // === Tela inicial ===
         case TELA_BEM_VINDO:
             clear_display();
@@ -957,72 +916,130 @@ if (tecla_debug != '\0') {
             // Mostrar "Iniciando..." mas não esperar aqui
             clear_display();
             display_mensagem_central("Iniciando...");
+            sleep_ms(800);
 
-            // Mudar imediatamente para o menu principal
-            // A inicialização continua em background
+            // Ir para tela de iniciar transporte
+            estado = TELA_INICIAR_TRANSPORTE;
+            break;
+
+        // === Tela de iniciar transporte ===
+        case TELA_INICIAR_TRANSPORTE:
+            clear_display();
+            display_mensagem_central("Iniciar\nTransporte\nSim - A");
+            // Espera até o usuário apertar o botão A
+            while (!btn_a_pressionado()) {
+                sleep_ms(50);
+            }
+            // Inicia o cronômetro apenas se ainda não estiver rodando
+            if (tempo_inicio_ms == 0) {
+                tempo_inicio_ms = to_ms_since_boot(get_absolute_time());
+            }
+            tempo_entrega_ms = 0; // Zera o tempo de entrega, pois será um cronômetro
             estado = MENU_PRINCIPAL;
             menu_idx = 0;
             scroll_offset = 0;
             break;
-
+        
         // === Tela de senha ===
-        case TELA_SENHA:
-{
-    display_tela_senha();
-    // Adicione este debug
-    printf("Aguardando senha...\n");
-
-    // Ler teclado matricial
-    char tecla = read_keypad();
-    if (tecla != '\0')
-    {
-        if (tecla >= '0' && tecla <= '9')
+        case MENU_CONTROLE_TAMPA:
         {
-            if (adicionar_digito(tecla))
+            char senha_trava[] = "56780";
+            char senha_destrava[] = "12340";
+            char entrada[10] = "";
+            int pos = 0;
+            char msg_display[30] = "Digite a senha:";
+
+            while (1)
             {
-                display_tela_senha(); // Atualiza tela com novo asterisco
+                // Exibir na tela
+                clear_display();
+                display_mensagem_central("Controle da Caixa");
+                display_linhas(msg_display, entrada, "", "Voltar: A");
+
+                // Exibir asteriscos para a senha
+                char asteriscos[10] = "";
+                for (int i = 0; i < pos; i++)
+                {
+                    asteriscos[i] = '*';
+                }
+                asteriscos[pos] = '\0';
+                display_linhas(msg_display, asteriscos, "", "Voltar: A");
+
+                char key = read_keypad();
+                if (key)
+                {
+                    if (key == 'A') // Botão 'A' do teclado para cancelar a entrada
+                    {
+                        estado = MENU_PRINCIPAL;
+                        break;
+                    }
+                    else if (key == 'C') // Botão 'C' para apagar
+                    {
+                        if (pos > 0)
+                        {
+                            pos--;
+                            entrada[pos] = '\0';
+                        }
+                    }
+                    else
+                    {
+                        printf("Tecla: %c\n", key);
+                        entrada[pos++] = key;
+                        entrada[pos] = '\0';
+
+                        // Verificar senha quando o comprimento atingir o esperado
+                        if (pos == strlen(senha_trava))
+                        {
+                            if (strcmp(entrada, senha_trava) == 0)
+                            {
+                                servo_travar();
+                                estado_caixa = CAIXA_FECHADA;
+                                display_mensagem_central("Caixa Trancada!");
+                                buzzer_beep(500);
+                                sleep_ms(1000);
+                                estado = MENU_PRINCIPAL;
+                                break;
+                            }
+                            else if (strcmp(entrada, senha_destrava) == 0)
+                            {
+                                servo_destravar();
+                                estado_caixa = CAIXA_ABERTA;
+                                display_mensagem_central("Caixa Destrancada!");
+                                buzzer_beep(500);
+                                sleep_ms(1000);
+                                estado = MENU_PRINCIPAL;
+                                break;
+                            }
+                            else
+                            {
+                                snprintf(msg_display, sizeof(msg_display), "Senha Incorreta!");
+                                buzzer_beep(100);
+                                sleep_ms(1000);
+                                snprintf(msg_display, sizeof(msg_display), "Digite a senha:");
+                                pos = 0; // reset entrada
+                                entrada[0] = '\0';
+                            }
+                        }
+                        else if (pos > strlen(senha_trava))
+                        {
+                            snprintf(msg_display, sizeof(msg_display), "Senha Incorreta!");
+                            buzzer_beep(100);
+                            sleep_ms(1000);
+                            snprintf(msg_display, sizeof(msg_display), "Digite a senha:");
+                            pos = 0; // reset entrada
+                            entrada[0] = '\0';
+                        }
+                    }
+                }
+                if (btn_a_pressionado())
+                {
+                    estado = MENU_PRINCIPAL;
+                    break;
+                }
+                sleep_ms(50);
             }
+            break;
         }
-        else if (tecla == '*')
-        {
-            reset_senha();
-            display_tela_senha();
-        }
-        sleep_ms(200);
-    }
-
-    // Verificar senha ao pressionar botão B
-    if (btn_b_pressionado())
-    {
-        if (verificar_senha())
-        {
-            // Senha correta - destravar sempre
-            display_mensagem_central("Senha correta!");
-            sleep_ms(1000);
-
-            // Destravar o servo independente do estado atual
-            servo_destravar();
-            estado_caixa = CAIXA_FECHADA; // Atualizar estado
-            display_mensagem_central("Tampa destravada");
-            
-            // Atualizar status no dashboard Wi-Fi
-            wifi_dashboard_update_box_status(false);
-            sleep_ms(1000);
-
-            display_mensagem_central("A iniciar transporte");
-            sleep_ms(1000);
-            estado = MENU_PRINCIPAL;
-        }
-        else
-        {
-            // Senha incorreta
-            display_mensagem_central("Senha incorreta!");
-            sleep_ms(1000);
-        }
-    }
-    break;
-}
-
 
         // === Menu principal ===
         case MENU_PRINCIPAL:
@@ -1037,108 +1054,6 @@ if (tecla_debug != '\0') {
             else if (dir == -1)
             { // baixo
                 menu_idx = (menu_idx + 1) % 8;
-            }
-            // Verificar se a caixa está fechada e não travada para oferecer opção de travar com botão B
-            float lux = get_luminosidade();
-            if (lux == 0 && estado_caixa == CAIXA_FECHADA && btn_b_pressionado())
-            {
-                // Travar a caixa diretamente com o botão B se iluminação for zero
-                servo_travar();
-                estado_caixa = CAIXA_FECHADA_TRAVADA;
-                display_mensagem_central("Tampa travada");
-                // Atualizar status no dashboard Wi-Fi
-                wifi_dashboard_update_box_status(false);
-                sleep_ms(1000);
-                break;
-            }
-
-            // Verificar se a caixa está travada e o usuário quer destravar com o teclado
-            if (estado_caixa == CAIXA_FECHADA_TRAVADA)
-            {
-                char tecla = read_keypad();
-                if (tecla != '\0')
-                {
-                    // Aceitar apenas dígitos numéricos se ainda não completou a senha
-if (tecla >= '0' && tecla <= '9') {
-    adicionar_digito(tecla);
-}
-                    // Tecla * para limpar a senha
-                    else if (tecla == '*')
-                    {
-                        // Resetar senha digitada
-                        reset_senha();
-                        buzzer_beep(100); // Feedback sonoro ao limpar
-                    }
-
-                    // Atualizar display com a senha atual
-                    char senha_display[10] = "";
-                    for (int i = 0; i < get_senha_pos(); i++)
-                    {
-                        strcat(senha_display, "*");
-                    }
-
-                    char senha_linha[22];
-                    snprintf(senha_linha, sizeof(senha_linha), "Senha: %s", senha_display);
-                    display_linhas("Destravar", "Digite a senha", senha_linha, "A:Voltar B:Confirmar *:Limpar");
-
-                    sleep_ms(200);
-                    break; // Continuar no menu principal após exibir a mensagem
-                }
-
-                // Verificar se o botão A foi pressionado para cancelar
-                if (btn_a_pressionado())
-                {
-                    display_mensagem_central("Operação cancelada");
-                    led_amarelo(true); // Feedback visual - LED amarelo
-                    buzzer_beep(100);  // Feedback sonoro
-                    sleep_ms(1000);
-                    led_desligado();
-
-                    // Resetar senha digitada
-                    reset_senha();
-
-                    break; // Continuar no menu principal
-                }
-
-                // Verificar senha quando pressionar o botão B
-                if (btn_b_pressionado() && get_senha_pos() > 0)
-                {
-                    if (verificar_senha())
-                    {
-                        // Senha correta
-                        display_mensagem_central("Senha correta!");
-                        led_verde(true);  // Feedback visual - LED verde
-                        buzzer_beep(200); // Feedback sonoro positivo
-                        sleep_ms(1000);
-                        led_desligado();
-
-                        servo_destravar();
-                        estado_caixa = CAIXA_FECHADA;
-                        display_mensagem_central("Tampa destravada");
-                        // Atualizar status no dashboard Wi-Fi
-                        wifi_dashboard_update_box_status(false);
-                        sleep_ms(1000);
-
-                        // Resetar senha digitada
-                        reset_senha();
-
-                        break; // Continuar no menu principal
-                    }
-                    else
-                    {
-                        // Senha incorreta ou incompleta
-                        display_mensagem_central("Senha incorreta!");
-                        led_vermelho(true); // Feedback visual - LED vermelho
-                        buzzer_alarme(500); // Feedback sonoro negativo
-                        sleep_ms(1000);
-                        led_desligado();
-
-                        // Resetar senha digitada
-                        reset_senha();
-
-                        break; // Continuar no menu principal
-                    }
-                }
             }
 
             if (btn_a_pressionado())
@@ -1158,15 +1073,18 @@ if (tecla >= '0' && tecla <= '9') {
                     estado = MENU_ACELEROMETRO;
                     break;
                 case 4:
-                    estado = MENU_CONTROLE_TAMPA;
+                    estado = MENU_HUMIDADE;
                     break;
                 case 5:
-                    estado = MENU_CONFIG_TEMPO;
+                    estado = MENU_CONTROLE_TAMPA;
                     break;
                 case 6:
-                    estado = MENU_TRAVAR_DESTRAVAR;
+                    estado = MENU_CONFIG_TEMPO;
                     break;
                 case 7:
+                    estado = MENU_TRAVAR_DESTRAVAR;
+                    break;
+                case 8:
                     estado = MENU_FINALIZAR;
                     break;
                 }
@@ -1174,7 +1092,30 @@ if (tecla >= '0' && tecla <= '9') {
             sleep_ms(150);
             break;
         }
+        case MENU_HUMIDADE: {
+            while (1) {
+                float umidade_val = 0.0f;
+                float temp_aht = 0.0f;
 
+                // Tenta ler AHT10; se falhar, mostra "--"
+                if (!aht10_read_data(sensor_i2c, &umidade_val, &temp_aht)) {
+                    display_mensagem_central("Erro leitura\nAHT10");
+                } else {
+                    char linha1[22];
+                    char linha2[22];
+                    snprintf(linha1, sizeof(linha1), "Umidade: %.1f%%", umidade_val);
+                    snprintf(linha2, sizeof(linha2), "Temp: %.1f C", temp_aht);
+                    display_linhas("AHT10", linha1, linha2, "< A para voltar");
+                }
+
+                if (btn_a_pressionado()) {
+                    estado = MENU_PRINCIPAL;
+                    break;
+                }
+                sleep_ms(200);
+            }
+            break;
+        }
         // === Menu Temperatura ===
         case MENU_TEMPERATURA:
         {
@@ -1220,77 +1161,26 @@ if (tecla >= '0' && tecla <= '9') {
         // === Menu Configuração de Tempo ===
         case MENU_CONFIG_TEMPO:
         {
-            uint32_t tempo_horas = tempo_entrega_ms / 3600000;
-            uint32_t tempo_minutos = (tempo_entrega_ms % 3600000) / 60000;
-            bool editando_horas = true;
+            // Exibe o cronômetro enquanto estiver neste menu
+            while (1) {
+                clear_display();
+                uint32_t agora = to_ms_since_boot(get_absolute_time());
+                uint32_t tempo_decorrido_ms = (tempo_inicio_ms > 0) ? (agora - tempo_inicio_ms) : 0;
+                uint32_t horas = tempo_decorrido_ms / (1000 * 60 * 60);
+                uint32_t minutos = (tempo_decorrido_ms / (1000 * 60)) % 60;
+                uint32_t segundos = (tempo_decorrido_ms / 1000) % 60;
+                char tempo_str[32];
+                snprintf(tempo_str, sizeof(tempo_str), "%02lu:%02lu:%02lu", horas, minutos, segundos);
+                char msg[48];
+                snprintf(msg, sizeof(msg), "Cronômetro:\n%s", tempo_str);
+                display_mensagem_central(msg);
 
-            while (1)
-            {
-                // Usar a função de display específica para configuração de tempo
-                display_config_tempo(tempo_horas, tempo_minutos, editando_horas);
-
-                // Ler joystick para aumentar/diminuir valores
-                int8_t dir = joystick_direcao();
-                if (dir == 1)
-                { // cima
-                    if (editando_horas)
-                    {
-                        if (tempo_horas < 99)
-                            tempo_horas++;
-                    }
-                    else
-                    {
-                        if (tempo_minutos < 59)
-                            tempo_minutos++;
-                    }
-                }
-                else if (dir == -1)
-                { // baixo
-                    if (editando_horas)
-                    {
-                        if (tempo_horas > 0)
-                            tempo_horas--;
-                    }
-                    else
-                    {
-                        if (tempo_minutos > 0)
-                            tempo_minutos--;
-                    }
-                }
-
-                // Botão A para alternar entre horas e minutos
-                if (btn_a_pressionado())
-                {
-                    editando_horas = !editando_horas;
-                    buzzer_beep(100); // Feedback sonoro
-                }
-
-                // Botão B para confirmar e ir para configuração de alerta
-                if (btn_b_pressionado())
-                {
-                    // Salvar o tempo configurado
-                    tempo_entrega_ms = (tempo_horas * 3600000) + (tempo_minutos * 60000);
-
-                    // Se o tempo for maior que zero, vá para a configuração de alerta
-                    if (tempo_entrega_ms > 0)
-                    {
-                        estado = MENU_CONFIG_TEMPO2;
-                        buzzer_beep(200); // Feedback sonoro
-                    }
-                    else
-                    {
-                        // Se o tempo for zero, desative o timer e volte ao menu principal
-                        alarme_tempo_ativo = false;
-                        alerta_tempo_disparado = false;
-                        led_desligado();
-                        display_mensagem_central("Timer desativado");
-                        sleep_ms(1000);
-                        estado = MENU_PRINCIPAL;
-                    }
+                // Volta para o menu principal ao apertar B ou A
+                if (btn_b_pressionado() || btn_a_pressionado()) {
+                    estado = MENU_PRINCIPAL;
                     break;
                 }
-
-                sleep_ms(150);
+                sleep_ms(200);
             }
             break;
         }
@@ -1347,105 +1237,7 @@ if (tecla >= '0' && tecla <= '9') {
             break;
         }
 
-        // === Menu Travar/Destravar ===
-        case MENU_TRAVAR_DESTRAVAR:
-{
-    float lux = get_luminosidade();
-
-    if (lux > 0)
-    {
-        // Caixa aberta
-        display_linhas("Travar/Destravar", "Caixa aberta", "Feche a caixa primeiro", "A:Voltar");
-    }
-    else
-    {
-        // Caixa fechada
-        if (estado_caixa == CAIXA_FECHADA_TRAVADA)
-        {
-            // Mostrar senha digitada
-            char senha_display[10] = "";
-            for (int i = 0; i < get_senha_pos(); i++)
-                strcat(senha_display, "*");
-
-            char linha[22];
-            snprintf(linha, sizeof(linha), "Senha: %s", senha_display);
-            display_linhas("Travar/Destravar", "Caixa travada", linha, "A:Voltar B:Confirmar *:Limpar");
-
-            // Ler teclado
-            char tecla = read_keypad();
-            if (tecla != '\0')
-            {
-                if (tecla >= '0' && tecla <= '9')
-                {
-                    adicionar_digito(tecla);
-                }
-                else if (tecla == '*')
-                {
-                    reset_senha();
-                }
-                sleep_ms(200);
-            }
-
-            // Botão A cancela
-            if (btn_a_pressionado())
-            {
-                display_mensagem_central("Operacao cancelada");
-                sleep_ms(1000);
-                reset_senha();
-                estado = MENU_PRINCIPAL;
-                break;
-            }
-
-            // Botão B confirma senha
-            if (btn_b_pressionado())
-            {
-                if (verificar_senha())
-                {
-                    display_mensagem_central("Senha correta!");
-                    sleep_ms(1000);
-
-                    servo_destravar();
-                    estado_caixa = CAIXA_FECHADA;
-                    display_mensagem_central("Tampa destravada");
-                    wifi_dashboard_update_box_status(false);
-                    sleep_ms(1000);
-                    estado = MENU_PRINCIPAL;
-                }
-                else
-                {
-                    display_mensagem_central("Senha incorreta!");
-                    sleep_ms(1000);
-                    reset_senha();
-                }
-            }
-        }
-        else
-        {
-            // Caixa fechada e destravada
-            display_linhas("Travar/Destravar", "Caixa fechada", "Deseja travar?", "A:Voltar B:Travar");
-
-            if (btn_b_pressionado())
-            {
-                servo_travar();
-                estado_caixa = CAIXA_FECHADA_TRAVADA;
-                display_mensagem_central("Tampa travada");
-                wifi_dashboard_update_box_status(false);
-                sleep_ms(1000);
-                estado = MENU_PRINCIPAL;
-            }
-        }
-    }
-
-    if (btn_a_pressionado())
-    {
-        estado = MENU_PRINCIPAL;
-    }
-
-    sleep_ms(150);
-    break;
-}
-
-        // === Menu Finalizar ===
+        // === Menu Luminosidade ===
         case MENU_LUMINOSIDADE:
         {
             while (1)
@@ -1611,34 +1403,22 @@ if (tecla >= '0' && tecla <= '9') {
             break;
         }
 
-        // === Menu Controle da Tampa ===
-        case MENU_CONTROLE_TAMPA:
-        {
-            display_controle_tampa();
-
-            // Verificar se o botão B foi pressionado para travar/destravar a tampa
-            if (btn_b_pressionado())
-            {
-                travar_tampa_da_caixa();
-                display_controle_tampa();
-            }
-
-            if (btn_a_pressionado())
-                estado = MENU_PRINCIPAL;
-            sleep_ms(150);
-            break;
-        }
-
         // === Finalizar ===
         case MENU_FINALIZAR:
         {
             display_mensagem_central("Finalizando...");
             sleep_ms(2000);
+            // Resetar cronômetro ao finalizar transporte
+            tempo_inicio_ms = 0;
+            tempo_entrega_ms = 0;
+            tempo_restante_ms = 0;
             display_mensagem_central("Ate logo!");
             sleep_ms(2000);
             estado = TELA_BEM_VINDO;
             break;
         }
-        }
-    }
+        // Fim do switch(estado)
+        } // <--- fecha o switch(estado)
+    } // <--- fecha o while(1)
+    return 0;
 }

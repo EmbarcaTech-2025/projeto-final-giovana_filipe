@@ -7,7 +7,7 @@
 #include <stdbool.h>
 
 // Configurações do servidor
-#define SERVER_IP "192.168.209.209"  // IP do servidor (Raspberry Pi Pico W)
+#define SERVER_IP "192.168.193.209"  // IP do servidor (Raspberry Pi Pico W)
 #define SERVER_PORT 3000              // Porta do servidor
 #define SERVER_PATH "/sensores"      // Rota padrão para envio dos dados
 

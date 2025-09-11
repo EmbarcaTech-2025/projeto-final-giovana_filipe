@@ -2,7 +2,10 @@
 // Comunicação apenas via polling HTTP (fetch), sem WebSocket
 
 // Variáveis globais
-let timerInterval = null; // Intervalo para o contador de tempo
+let timerInterval = null; // Intervalo para o cronômetro
+let cronometroAtivo = false;
+let tempoDecorridoMs = 0;
+let ultimoUpdateTimestamp = null;
 let estimatedEndTime = null; // Tempo estimado para entrega
 let alertMinutesThreshold = 10; // Minutos para alertar antes do fim do tempo
 let currentPassword = ''; // Senha atual para destravar/travar a caixa
@@ -21,66 +24,11 @@ document.addEventListener('DOMContentLoaded', function() {
     updateCurrentDateTime();
     setInterval(updateCurrentDateTime, 1000);
 
+    // Iniciar cronômetro local se necessário
+    startCronometroInterval();
+
     // Verificar status inicial dos elementos
     updateUIStatus();
-
-    // Adicionar event listeners para os botões
-    document.getElementById('startRecordingBtn').addEventListener('click', function() {
-        sendCommand('start_recording');
-    });
-
-    document.getElementById('stopRecordingBtn').addEventListener('click', function() {
-        sendCommand('stop_recording');
-    });
-
-    document.getElementById('downloadCsvBtn').addEventListener('click', function() {
-        sendCommand('download_csv');
-    });
-
-    document.getElementById('unlockBoxBtn').addEventListener('click', function() {
-        showUnlockModal();
-    });
-
-    document.getElementById('lockBoxBtn').addEventListener('click', function() {
-        showLockModal();
-    });
-
-    document.getElementById('configTimerBtn').addEventListener('click', function() {
-        showTimerModal();
-    });
-
-    // Event listeners para os modais
-    document.getElementById('closeUnlockModal').addEventListener('click', closeUnlockModal);
-    document.getElementById('closeLockModal').addEventListener('click', closeLockModal);
-    document.getElementById('closeTimerModal').addEventListener('click', closeTimerModal);
-
-    // Event listeners para os botões de ação nos modais
-    document.getElementById('confirmUnlockBtn').addEventListener('click', unlockBox);
-    document.getElementById('confirmLockBtn').addEventListener('click', lockBox);
-    document.getElementById('confirmTimerBtn').addEventListener('click', setTimer);
-
-    // Event listeners para o teclado numérico
-    const keypadButtons = document.querySelectorAll('.keypad-button');
-    keypadButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const digit = this.textContent;
-            if (digit === 'C') {
-                clearPassword();
-            } else {
-                addDigit(digit);
-            }
-        });
-    });
-
-    // Fechar modais quando clicar fora deles
-    window.addEventListener('click', function(event) {
-        if (event.target.classList.contains('modal')) {
-            event.target.style.display = 'none';
-            if (event.target.id === 'unlockModal') {
-                clearPassword();
-            }
-        }
-    });
 });
 
 // Atualizar data e hora atual
@@ -141,172 +89,114 @@ function updateConnectionStatus(connected) {
     if (connected) {
         statusElement.className = 'connection-status connected';
         textElement.textContent = 'Conectado';
-        // Atualizar LED para verde quando conectado e sem alertas
-        if (!document.getElementById('temp-alert').classList.contains('danger') && 
-            !document.getElementById('accel-alert').classList.contains('danger') && 
-            !document.getElementById('time-alert').classList.contains('danger')) {
-            updateLedStatus('normal');
-        }
     } else {
         statusElement.className = 'connection-status disconnected';
         textElement.textContent = 'Desconectado';
-        // Atualizar LED para azul quando desconectado (aviso)
-        updateLedStatus('warning');
     }
 }
 
 // Atualizar dados do dashboard com base nos dados recebidos
 function updateDashboardData(data) {
+    if (data.umidade !== undefined) {
+        const humElem = document.getElementById('humidity');
+        if (humElem) humElem.textContent = Number(data.umidade).toFixed(1);
+    }
     // Atualizar temperatura
     if (data.temperatura !== undefined) {
         document.getElementById('temperature').textContent = data.temperatura.toFixed(1);
-        
         // Verificar alerta de temperatura
-        if (data.alerta_temp_ativo || data.temperatura > TEMP_THRESHOLD) {
+        if (data.alerta_temp_ativo) {
             document.getElementById('temp-alert').textContent = `ALERTA: Temperatura acima de ${TEMP_THRESHOLD}°C!`;
             document.getElementById('temp-alert').className = 'alert-status danger';
-            
-            // Atualizar LED para vermelho (perigo)
-            updateLedStatus('danger');
         } else {
             document.getElementById('temp-alert').textContent = 'Normal';
             document.getElementById('temp-alert').className = 'alert-status normal';
         }
     }
-    
     // Atualizar pressão
     if (data.pressao !== undefined) {
         document.getElementById('pressure').textContent = data.pressao.toFixed(2);
     }
-    
     // Atualizar luminosidade
     if (data.luminosidade !== undefined) {
         document.getElementById('luminosity').textContent = data.luminosidade.toFixed(1);
-        
-        // Se a luminosidade for baixa, a caixa está fechada
-        if (data.luminosidade < 10) {
-            // Mostrar botão de destravar
-            document.getElementById('unlockBoxBtn').style.display = 'inline-block';
-            document.getElementById('lockBoxBtn').style.display = 'none';
-        } else {
-            // Mostrar botão de travar
-            document.getElementById('unlockBoxBtn').style.display = 'none';
-            document.getElementById('lockBoxBtn').style.display = 'inline-block';
+        // Mensagem de status da caixa baseada na luminosidade
+        let lumStatusElem = document.getElementById('luminosity-status');
+        if (!lumStatusElem) {
+            // Cria o elemento se não existir
+            const lumElem = document.getElementById('luminosity');
+            if (lumElem && lumElem.parentElement) {
+                lumStatusElem = document.createElement('div');
+                lumStatusElem.id = 'luminosity-status';
+                lumStatusElem.style.marginTop = '4px';
+                lumStatusElem.style.textAlign = 'center';
+                lumElem.parentElement.appendChild(lumStatusElem);
+            }
+        }
+        if (lumStatusElem) {
+            if (Number(data.luminosidade) === 0) {
+                lumStatusElem.textContent = 'Caixa Fechada';
+                lumStatusElem.className = 'alert-status danger';
+            } else {
+                lumStatusElem.textContent = 'Caixa Aberta';
+                lumStatusElem.className = 'alert-status normal';
+            }
         }
     }
-    
     // Atualizar aceleração
-    if (data.aceleracao_x !== undefined && data.aceleracao_y !== undefined && data.aceleracao_z !== undefined) {
-        // Calcular a magnitude da aceleração
-        const accelX = data.aceleracao_x / 16384.0; // Converter para g (1g = 16384 no MPU6050)
-        const accelY = data.aceleracao_y / 16384.0;
-        const accelZ = data.aceleracao_z / 16384.0;
-        
-        const magnitude = Math.sqrt(accelX*accelX + accelY*accelY + accelZ*accelZ);
-        document.getElementById('acceleration').textContent = magnitude.toFixed(2);
-        
+    if (data.aceleracao_total !== undefined) {
+        document.getElementById('acceleration').textContent = data.aceleracao_total.toFixed(2);
         // Verificar alerta de movimento brusco
-        if (data.alerta_acel_ativo || magnitude > ACCEL_THRESHOLD) {
+        if (data.alerta_acel_ativo) {
             document.getElementById('accel-alert').textContent = 'ALERTA: Movimento brusco detectado!';
             document.getElementById('accel-alert').className = 'alert-status danger';
-            
-            // Atualizar LED para vermelho (perigo)
-            updateLedStatus('danger');
         } else {
             document.getElementById('accel-alert').textContent = 'Normal';
             document.getElementById('accel-alert').className = 'alert-status normal';
         }
     }
-    
-    // Atualizar tempo de entrega e tempo restante
-    if (data.tempo_entrega_ms !== undefined && data.tempo_restante_ms !== undefined) {
-        // Converter de milissegundos para horas e minutos
-        const horasTotal = Math.floor(data.tempo_entrega_ms / (3600 * 1000));
-        const minutosTotal = Math.floor((data.tempo_entrega_ms % (3600 * 1000)) / (60 * 1000));
-        
-        const horasRestantes = Math.floor(data.tempo_restante_ms / (3600 * 1000));
-        const minutosRestantes = Math.floor((data.tempo_restante_ms % (3600 * 1000)) / (60 * 1000));
-        const segundosRestantes = Math.floor((data.tempo_restante_ms % (60 * 1000)) / 1000);
-        
-        // Formatar o tempo restante
-        const timeString = `${horasRestantes.toString().padStart(2, '0')}:${minutosRestantes.toString().padStart(2, '0')}:${segundosRestantes.toString().padStart(2, '0')}`;
-        
-        // Atualizar elementos na interface
-        document.getElementById('estimated-time').textContent = timeString;
-        
-        if (data.alarme_tempo_ativo) {
-            // Verificar se está próximo do tempo limite para alerta
-            const tempoAlertaMs = data.alerta_tempo_min * 60 * 1000;
-            if (data.tempo_restante_ms <= tempoAlertaMs && data.tempo_restante_ms > 0) {
-                document.getElementById('time-alert').textContent = 
-                    `ALERTA: Menos de ${data.alerta_tempo_min} minutos para entrega!`;
-                document.getElementById('time-alert').className = 'alert-status warning';
-                updateLedStatus('warning');
-            } else if (data.tempo_restante_ms <= 0) {
-                document.getElementById('time-alert').textContent = 
-                    `ALERTA: Tempo de entrega esgotado!`;
-                document.getElementById('time-alert').className = 'alert-status danger';
-                updateLedStatus('danger');
-            } else {
-                document.getElementById('time-alert').textContent = 'Normal';
-                document.getElementById('time-alert').className = 'alert-status normal';
-            }
+    // Exibir tempo cronometrado (cronômetro)
+    if (typeof data.tempo_decorrido_ms === 'number') {
+        tempoDecorridoMs = data.tempo_decorrido_ms;
+        ultimoUpdateTimestamp = Date.now();
+        if (tempoDecorridoMs > 0) {
+            cronometroAtivo = true;
+            startCronometroInterval();
         } else {
-            document.getElementById('time-alert').textContent = 'Inativo';
-            document.getElementById('time-alert').className = 'alert-status normal';
+            cronometroAtivo = false;
+            stopCronometroInterval();
         }
+        renderCronometro();
     }
-    
     // Atualizar status da caixa
     if (data.caixa_aberta !== undefined) {
-        const boxStatus = data.caixa_aberta ? 'ABERTA' : 'FECHADA';
+        // Se caixa_aberta: destrancada, senão: trancada
+        const boxStatus = data.caixa_aberta ? 'Destrancada' : 'Trancada';
         document.getElementById('box-status').textContent = boxStatus;
         document.getElementById('box-status').className = data.caixa_aberta ? 'status open' : 'status closed';
-        
         // Atualizar visibilidade do botão de travar/destravar
         if (!data.caixa_aberta) {
-            // Caixa fechada - mostrar botão de destravar
             document.getElementById('unlockBoxBtn').style.display = 'inline-block';
             document.getElementById('lockBoxBtn').style.display = 'none';
-            
-            // Atualizar LED para verde (normal/seguro) se não houver outros alertas
-            if (!document.getElementById('temp-alert').classList.contains('danger') && 
-                !document.getElementById('accel-alert').classList.contains('danger') && 
-                !document.getElementById('time-alert').classList.contains('danger')) {
-                updateLedStatus('normal');
-            }
         } else {
-            // Caixa aberta - mostrar botão de travar
             document.getElementById('unlockBoxBtn').style.display = 'none';
             document.getElementById('lockBoxBtn').style.display = 'inline-block';
-            
-            // Atualizar LED para azul (aviso - caixa aberta)
-            if (!document.getElementById('temp-alert').classList.contains('danger') && 
-                !document.getElementById('time-alert').classList.contains('danger')) {
-                updateLedStatus('warning');
-            }
         }
     }
-    
     // Atualizar status do LED RGB
     if (data.led_status !== undefined) {
         updateLedStatus(data.led_status);
     }
-    
     // Atualizar total de registros
     if (data.registros_totais !== undefined) {
         document.getElementById('totalRecords').textContent = data.registros_totais;
     }
-    
     // Atualizar status de gravação
     if (data.logging_ativo !== undefined) {
         const recordingStatus = data.logging_ativo ? 'Gravando' : 'Parado';
         document.getElementById('recordingStatus').textContent = recordingStatus;
-        
-        // Atualizar visibilidade dos botões de gravação
         updateRecordingButtons(data.logging_ativo);
     }
-    
     // Atualizar timestamp da última atualização
     const now = new Date();
     const options = { 
@@ -318,6 +208,48 @@ function updateDashboardData(data) {
         year: 'numeric'
     };
     document.getElementById('last-update').textContent = `Última atualização: ${now.toLocaleDateString('pt-BR', options)}`;
+}
+
+// Atualiza o valor do cronômetro no card Tempo Cronometrado
+function renderCronometro() {
+
+    const chronElem = document.getElementById('chronometer-time');
+    if (chronElem) {
+        chronElem.textContent = formatarTempo(tempoDecorridoMs);
+    }
+}
+
+// Formata milissegundos para HH:MM:SS
+function formatarTempo(ms) {
+    let totalSeconds = Math.floor(ms / 1000);
+    let hours = Math.floor(totalSeconds / 3600);
+    let minutes = Math.floor((totalSeconds % 3600) / 60);
+    let seconds = totalSeconds % 60;
+    return `${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+}
+
+// Inicia o intervalo do cronômetro local
+function startCronometroInterval() {
+    if (timerInterval) return;
+    timerInterval = setInterval(() => {
+        if (cronometroAtivo) {
+            // Incrementa o tempo decorrido localmente desde o último update do servidor
+            if (ultimoUpdateTimestamp) {
+                const agora = Date.now();
+                const delta = agora - ultimoUpdateTimestamp;
+                tempoDecorridoMs += delta;
+                ultimoUpdateTimestamp = agora;
+                renderCronometro();
+            }
+        }
+    }, 1000);
+}
+
+function stopCronometroInterval() {
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
 }
 
 // Atualizar botões de gravação com base no status
