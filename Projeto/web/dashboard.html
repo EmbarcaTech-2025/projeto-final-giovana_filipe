@@ -498,6 +498,13 @@
 
             <div class="card">
                 <h3><span class="card-icon">📝</span>Registros</h3>
+                <form id="registroForm" style="margin-bottom:10px;">
+                    <input type="text" id="origem" placeholder="Local de Origem" style="width:100%;margin-bottom:5px;">
+                    <input type="text" id="destino" placeholder="Local de Destino" style="width:100%;margin-bottom:5px;">
+                    <input type="text" id="responsavel" placeholder="Responsável pela Entrega" style="width:100%;margin-bottom:5px;">
+                    <input type="text" id="tempoEstimado" placeholder="Tempo Estimado" style="width:100%;margin-bottom:5px;">
+                    <textarea id="infoRelevante" placeholder="Informações Relevantes" style="width:100%;margin-bottom:5px;"></textarea>
+                </form>
                 <div class="value" id="totalRecords">--</div>
                 <div class="unit">total</div>
                 <div class="timestamp" id="last-update">Última atualização: --</div>
@@ -509,7 +516,7 @@
                 🚚 Iniciar Transporte
             </button>
             <button class="btn btn-danger" onclick="stopRecording()">
-                ⏹️ Parar Gravação
+                ⏹️ Finalizar Transporte
             </button>
             <button class="btn btn-primary" onclick="downloadCSV()">
                 📥 Download CSV

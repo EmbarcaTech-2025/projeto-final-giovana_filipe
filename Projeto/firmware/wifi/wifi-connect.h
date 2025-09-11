@@ -8,8 +8,8 @@
 #include "pico/cyw43_arch.h"
 
 // Configurações WiFi
-#define WIFI_SSID "Gih"
-#define WIFI_PASSWORD "giovana18"
+#define WIFI_SSID "FilipeSousa"
+#define WIFI_PASSWORD "devlove28"
 #define WIFI_CONNECT_TIMEOUT_MS 10000
 #define WIFI_RETRY_DELAY_MS 3000
 

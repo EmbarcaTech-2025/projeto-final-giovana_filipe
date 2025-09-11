@@ -1,3 +1,41 @@
+// Função para iniciar transporte
+function startTransport() {
+    // Coletar dados do registro
+    const origem = document.getElementById('origem').value;
+    const destino = document.getElementById('destino').value;
+    const responsavel = document.getElementById('responsavel').value;
+    const tempoEstimado = document.getElementById('tempoEstimado').value;
+    const infoRelevante = document.getElementById('infoRelevante').value;
+
+    // Enviar comando para iniciar transporte com dados do registro
+    sendCommand('start_transport', {
+        origem,
+        destino,
+        responsavel,
+        tempoEstimado,
+        infoRelevante
+    });
+}
+
+// Função para finalizar transporte
+function stopRecording() {
+    sendCommand('finalizar_transporte');
+}
+
+// Função para baixar CSV
+function downloadCSV() {
+    window.open('http://localhost:3000/download-csv', '_blank');
+}
+
+// Atualizar status do LED RGB (chamada dentro de updateDashboardData)
+function updateDashboardData(data) {
+    // ...existing code...
+    // LED RGB
+    if (data.led_status !== undefined) {
+        updateLedStatus(data.led_status);
+    }
+    // ...existing code...
+}
 // Interatividade para o dashboard do BioCooler
 // Comunicação apenas via polling HTTP (fetch), sem WebSocket
 
@@ -18,7 +56,12 @@ const ACCEL_THRESHOLD = 2.0; // Aceleração máxima em m/s²
 document.addEventListener('DOMContentLoaded', function() {
     // Iniciar polling HTTP para buscar dados do servidor
     fetchSensorData();
-    setInterval(fetchSensorData, 3000);
+    // Taxa de amostragem do dashboard: 1 segundo (1000ms)
+    // IMPORTANTE: Esta taxa garante atualização quase em tempo real dos dados do sistema,
+    // permitindo monitoramento eficiente e resposta rápida a eventos críticos.
+    // Para aplicações que exigem menor latência, pode-se reduzir para 500ms, mas isso aumenta o tráfego de rede.
+    // Para economizar recursos, pode-se aumentar para 2-5 segundos.
+    setInterval(fetchSensorData, 1000);
 
     // Atualizar data e hora atual
     updateCurrentDateTime();
