@@ -5,6 +5,10 @@
 static struct tcp_pcb *pcb_global = NULL;
 static bool is_connecting = false;
 
+// Variável para armazenar comando recebido
+static char received_command[256] = {0};
+static bool has_command = false;
+
 // Callback para quando a conexão TCP é estabelecida
 static err_t connected_callback(void *arg, struct tcp_pcb *tpcb, err_t err) {
     if (err != ERR_OK) {
@@ -30,7 +34,29 @@ static err_t sent_callback(void *arg, struct tcp_pcb *pcb, u16_t len)
 // Callback para quando a conexão TCP é fechada remotamente
 static err_t recv_callback(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err) {
     if (p) {
-        // Ignora os dados recebidos para este exemplo
+        // Processar os dados recebidos
+        char *data = (char *)p->payload;
+        printf("Dados recebidos: %s\n", data);
+        
+        // Verificar se há comando
+        if (strstr(data, "\"comando\":{")) {
+            // Extrair o comando (simplificado)
+            char *cmd_start = strstr(data, "\"comando\":\"");
+            if (cmd_start) {
+                cmd_start += 11; // Avançar após "comando":"
+                char *cmd_end = strchr(cmd_start, '"');
+                if (cmd_end) {
+                    size_t len = cmd_end - cmd_start;
+                    if (len < sizeof(received_command)) {
+                        strncpy(received_command, cmd_start, len);
+                        received_command[len] = '\0';
+                        has_command = true;
+                        printf("Comando recebido: %s\n", received_command);
+                    }
+                }
+            }
+        }
+        
         pbuf_free(p);
     } else if (err == ERR_OK) {
         // Conexão fechada remotamente
@@ -173,4 +199,15 @@ bool send_sensor_data(float temperatura, float pressao, uint16_t luminosidade,
 
     err_t result = send_data_to_server_persistent(path, json_request, type_method);
     return result == ERR_OK;
+}
+
+// Função para obter comando pendente
+bool get_pending_command(char *command, size_t max_len) {
+    if (has_command) {
+        strncpy(command, received_command, max_len - 1);
+        command[max_len - 1] = '\0';
+        has_command = false;
+        return true;
+    }
+    return false;
 }

@@ -46,6 +46,9 @@ let historicoTemperatura = [];
 // Armazenar o histórico completo de todos os dados
 let historicoCompleto = [];
 
+// Armazenar comando pendente para o Pico
+let comandoPendente = null;
+
 app.post('/receber', (req, res) => {
     const { dado } = req.body;
     console.log('Dado recebido:', dado);
@@ -89,7 +92,14 @@ app.post('/sensores', (req, res) => {
     // Limita o histórico completo a 2000 pontos
     if (historicoCompleto.length > 2000) historicoCompleto.shift();
     console.log('[POST /sensores] ultimosDados atualizado:', ultimosDados);
-    res.send('Dados dos sensores recebidos com sucesso!');
+    
+    // Verificar se há comando pendente
+    let response = { sucesso: true, mensagem: 'Dados dos sensores recebidos com sucesso!' };
+    if (comandoPendente) {
+        response.comando = comandoPendente;
+        comandoPendente = null; // Limpar após enviar
+    }
+    res.json(response);
 });
 
 app.get('/sensores', (req, res) => {
@@ -132,6 +142,16 @@ app.post('/comando', (req, res) => {
     });
 });
 
+// Endpoint para o Pico buscar comandos pendentes
+app.get('/comando', (req, res) => {
+    if (comandoPendente) {
+        res.json({ comando: comandoPendente.comando, parametros: comandoPendente.parametros });
+        comandoPendente = null; // Limpar após enviar
+    } else {
+        res.json({ comando: null });
+    }
+});
+
 function processarComando(comando, params) {
     console.log(`Processando comando: ${comando}`, params);
     let result;
@@ -146,19 +166,28 @@ function processarComando(comando, params) {
                 result = { status: 'error', message: 'Parâmetros inválidos' };
             } else {
                 console.log('Configurando timer:', params);
+                comandoPendente = { comando, parametros: params };
                 result = { status: 'success', message: 'Timer configurado com sucesso' };
             }
             break;
         case 'lock_box':
             console.log('Travando caixa');
+            comandoPendente = { comando, parametros: params };
             result = { status: 'success', message: 'Caixa travada com sucesso' };
             break;
         case 'unlock_box':
             console.log('Destravando caixa');
+            comandoPendente = { comando, parametros: params };
             result = { status: 'success', message: 'Caixa destravada com sucesso' };
+            break;
+        case 'start_transport':
+            console.log('Iniciando transporte');
+            comandoPendente = { comando, parametros: params };
+            result = { status: 'success', message: 'Transporte iniciado com sucesso' };
             break;
         case 'start_recording':
             console.log('Iniciando gravação');
+            comandoPendente = { comando, parametros: params };
             result = { status: 'success', message: 'Gravação iniciada com sucesso' };
             break;
         default:

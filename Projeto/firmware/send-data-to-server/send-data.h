@@ -7,7 +7,7 @@
 #include <stdbool.h>
 
 // Configurações do servidor
-#define SERVER_IP "10.63.72.96"  // IP do servidor (Raspberry Pi Pico W)
+#define SERVER_IP "192.168.3.209"  // IP do servidor (Raspberry Pi Pico W)
 #define SERVER_PORT 3000              // Porta do servidor
 #define SERVER_PATH "/sensores"      // Rota padrão para envio dos dados
 
@@ -22,4 +22,7 @@ bool send_sensor_data(float temperatura, float pressao, uint16_t luminosidade,
                       int16_t accel_x, int16_t accel_y, int16_t accel_z, 
                       bool caixa_aberta);
 
-#endif // SEND_DATA_HF
+// Função para obter comando pendente
+bool get_pending_command(char *command, size_t max_len);
+
+#endif // SEND_DATA_H

@@ -18,6 +18,7 @@
 #include "inc/aht10.h"
 #include "inc/estado_caixa.h"
 #include "firmware/wifi/wifi-connect.h"
+#include "firmware/send-data-to-server/send-data.h"
 #include "firmware/dashboard/dashboard.h"
 
 
@@ -900,6 +901,27 @@ int main()
 
             // Enviar dados para o dashboard
             dashboard_update_sensor_data(&sensor_data);
+
+            // Verificar se há comando pendente
+            char command[256];
+            if (get_pending_command(command, sizeof(command))) {
+                printf("Comando recebido: %s\n", command);
+                if (strcmp(command, "start_transport") == 0) {
+                    // Simular pressionar A em TELA_INICIAR_TRANSPORTE
+                    if (estado == TELA_INICIAR_TRANSPORTE) {
+                        if (tempo_inicio_ms == 0) {
+                            tempo_inicio_ms = to_ms_since_boot(get_absolute_time());
+                        }
+                        tempo_entrega_ms = 0; // Zera o tempo de entrega, pois será um cronômetro
+                        estado = MENU_PRINCIPAL;
+                        menu_idx = 0;
+                        scroll_offset = 0;
+                        printf("Transporte iniciado remotamente\n");
+                    } else {
+                        printf("Comando start_transport ignorado, estado atual: %d\n", estado);
+                    }
+                }
+            }
 
             ultimo_envio_dashboard = agora;
         }

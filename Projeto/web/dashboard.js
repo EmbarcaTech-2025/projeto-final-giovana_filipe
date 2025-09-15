@@ -101,26 +101,29 @@ function updateCurrentDateTime() {
 
 
 
-// Função para buscar dados dos sensores do servidor
+// Função para buscar dados dos sensores do servidor (robusta)
+let pollingFailures = 0;
+const MAX_POLLING_FAILURES = 10;
 function fetchSensorData() {
     const serverUrl = `${window.location.origin}/sensores`;
-
-    
     fetch(serverUrl)
         .then(response => {
-            if (!response.ok) {
-                throw new Error('Erro na resposta do servidor: ' + response.status);
-            }
+            if (!response.ok) throw new Error('Erro na resposta do servidor: ' + response.status);
             return response.json();
         })
         .then(data => {
-            console.log('Dados recebidos do servidor:', data);
+            pollingFailures = 0;
             updateConnectionStatus(true);
             updateDashboardData(data);
+            console.debug('[Dashboard] Dados recebidos:', data);
         })
         .catch(error => {
-            console.error('Erro ao buscar dados do servidor:', error);
+            pollingFailures++;
             updateConnectionStatus(false);
+            if (pollingFailures === MAX_POLLING_FAILURES) {
+                alert('Perda de conexão com o servidor. Tente recarregar a página.');
+            }
+            console.error('[Dashboard] Erro ao buscar dados do servidor:', error);
         });
 }
 
@@ -146,28 +149,33 @@ function updateDashboardData(data) {
     }
     // Atualizar temperatura
     if (data.temperatura !== undefined) {
-        document.getElementById('temperature').textContent = data.temperatura.toFixed(1);
+        const tempElem = document.getElementById('temperature');
+        if (tempElem) tempElem.textContent = data.temperatura.toFixed(1);
         // Verificar alerta de temperatura
-        if (data.alerta_temp_ativo) {
-            document.getElementById('temp-alert').textContent = `ALERTA: Temperatura acima de ${TEMP_THRESHOLD}°C!`;
-            document.getElementById('temp-alert').className = 'alert-status danger';
-        } else {
-            document.getElementById('temp-alert').textContent = 'Normal';
-            document.getElementById('temp-alert').className = 'alert-status normal';
+        const tempAlertElem = document.getElementById('temp-alert');
+        if (tempAlertElem) {
+            if (data.alerta_temp_ativo) {
+                tempAlertElem.textContent = `ALERTA: Temperatura acima de ${TEMP_THRESHOLD}°C!`;
+                tempAlertElem.className = 'alert-status danger';
+            } else {
+                tempAlertElem.textContent = 'Normal';
+                tempAlertElem.className = 'alert-status normal';
+            }
         }
     }
     // Atualizar pressão
     if (data.pressao !== undefined) {
-        document.getElementById('pressure').textContent = data.pressao.toFixed(2);
+        const pressElem = document.getElementById('pressure');
+        if (pressElem) pressElem.textContent = data.pressao.toFixed(2);
     }
     // Atualizar luminosidade
     if (data.luminosidade !== undefined) {
-        document.getElementById('luminosity').textContent = data.luminosidade.toFixed(1);
+        const lumElem = document.getElementById('luminosity');
+        if (lumElem) lumElem.textContent = data.luminosidade.toFixed(1);
         // Mensagem de status da caixa baseada na luminosidade
         let lumStatusElem = document.getElementById('luminosity-status');
         if (!lumStatusElem) {
             // Cria o elemento se não existir
-            const lumElem = document.getElementById('luminosity');
             if (lumElem && lumElem.parentElement) {
                 lumStatusElem = document.createElement('div');
                 lumStatusElem.id = 'luminosity-status';
@@ -188,14 +196,18 @@ function updateDashboardData(data) {
     }
     // Atualizar aceleração
     if (data.aceleracao_total !== undefined) {
-        document.getElementById('acceleration').textContent = data.aceleracao_total.toFixed(2);
+        const accelElem = document.getElementById('acceleration');
+        if (accelElem) accelElem.textContent = data.aceleracao_total.toFixed(2);
         // Verificar alerta de movimento brusco
-        if (data.alerta_acel_ativo) {
-            document.getElementById('accel-alert').textContent = 'ALERTA: Movimento brusco detectado!';
-            document.getElementById('accel-alert').className = 'alert-status danger';
-        } else {
-            document.getElementById('accel-alert').textContent = 'Normal';
-            document.getElementById('accel-alert').className = 'alert-status normal';
+        const accelAlertElem = document.getElementById('accel-alert');
+        if (accelAlertElem) {
+            if (data.alerta_acel_ativo) {
+                accelAlertElem.textContent = 'ALERTA: Movimento brusco detectado!';
+                accelAlertElem.className = 'alert-status danger';
+            } else {
+                accelAlertElem.textContent = 'Normal';
+                accelAlertElem.className = 'alert-status normal';
+            }
         }
     }
     // Exibir tempo cronometrado (cronômetro)
@@ -215,15 +227,22 @@ function updateDashboardData(data) {
     if (data.caixa_aberta !== undefined) {
         // Se caixa_aberta: destrancada, senão: trancada
         const boxStatus = data.caixa_aberta ? 'Destrancada' : 'Trancada';
-        document.getElementById('box-status').textContent = boxStatus;
-        document.getElementById('box-status').className = data.caixa_aberta ? 'status open' : 'status closed';
+        const boxStatusElem = document.getElementById('box-status');
+        if (boxStatusElem) {
+            boxStatusElem.textContent = boxStatus;
+            boxStatusElem.className = data.caixa_aberta ? 'status open' : 'status closed';
+        }
         // Atualizar visibilidade do botão de travar/destravar
-        if (!data.caixa_aberta) {
-            document.getElementById('unlockBoxBtn').style.display = 'inline-block';
-            document.getElementById('lockBoxBtn').style.display = 'none';
-        } else {
-            document.getElementById('unlockBoxBtn').style.display = 'none';
-            document.getElementById('lockBoxBtn').style.display = 'inline-block';
+        const unlockBtn = document.getElementById('unlockBoxBtn');
+        const lockBtn = document.getElementById('lockBoxBtn');
+        if (unlockBtn && lockBtn) {
+            if (!data.caixa_aberta) {
+                unlockBtn.style.display = 'inline-block';
+                lockBtn.style.display = 'none';
+            } else {
+                unlockBtn.style.display = 'none';
+                lockBtn.style.display = 'inline-block';
+            }
         }
     }
     // Atualizar status do LED RGB
@@ -232,12 +251,14 @@ function updateDashboardData(data) {
     }
     // Atualizar total de registros
     if (data.registros_totais !== undefined) {
-        document.getElementById('totalRecords').textContent = data.registros_totais;
+        const totalRecordsElem = document.getElementById('totalRecords');
+        if (totalRecordsElem) totalRecordsElem.textContent = data.registros_totais;
     }
     // Atualizar status de gravação
     if (data.logging_ativo !== undefined) {
         const recordingStatus = data.logging_ativo ? 'Gravando' : 'Parado';
-        document.getElementById('recordingStatus').textContent = recordingStatus;
+        const recordingStatusElem = document.getElementById('recordingStatus');
+        if (recordingStatusElem) recordingStatusElem.textContent = recordingStatus;
         updateRecordingButtons(data.logging_ativo);
     }
     // Atualizar timestamp da última atualização
@@ -250,7 +271,8 @@ function updateDashboardData(data) {
         month: '2-digit',
         year: 'numeric'
     };
-    document.getElementById('last-update').textContent = `Última atualização: ${now.toLocaleDateString('pt-BR', options)}`;
+    const lastUpdateElem = document.getElementById('last-update');
+    if (lastUpdateElem) lastUpdateElem.textContent = `Última atualização: ${now.toLocaleDateString('pt-BR', options)}`;
 }
 
 // Atualiza o valor do cronômetro no card Tempo Cronometrado

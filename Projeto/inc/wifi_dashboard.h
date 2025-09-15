@@ -118,3 +118,4 @@ void wifi_dashboard_update_box_status(bool is_open);
 void wifi_dashboard_update_total_records(uint32_t total);
 
 #endif // WIFI_DASHBOARD_H
+
