@@ -1,113 +1,59 @@
-# **BioSmartCooler - Recipiente Inteligente para Transporte de Órgãos**  
+# BioCooler: Recipiente Inteligente para Transporte de Órgãos
 
-**Institution**: Instituto Hardware BR-DF  
-**Course**: Technological Residency in Embedded Systems  
-**Authors**: **Giovana Ferreira Santos** e **Filipe Alves de Sousa**  
-**Location**: Brasília-DF  
-**Date**: Julho de 2025  
+## 📝 Descrição
 
----
+O BioCooler é um protótipo de recipiente térmico inteligente projetado para modernizar e otimizar o transporte de órgãos para transplantes. Utilizando sistemas eletrônicos embarcados e conceitos de Internet das Coisas (IoT), o projeto visa solucionar as limitações dos métodos convencionais, que geralmente se baseiam em caixas térmicas com gelo e carecem de monitoramento em tempo real.
 
-## **About This Repository**  
-This repository contains the development of **BioSmartCooler**, an intelligent thermal container designed to modernize organ transportation by incorporating embedded electronic systems and IoT (Internet of Things) principles. The project focuses on real-time monitoring of critical parameters such as temperature, humidity, light exposure, and physical impacts, ensuring organ viability during transport.  
+Este sistema monitora continuamente parâmetros críticos como temperatura, umidade, luminosidade e impacto, fornecendo alertas sonoros e visuais imediatos em caso de qualquer anomalia. Com isso, o BioCooler aumenta a segurança e a viabilidade dos órgãos, contribuindo para o sucesso dos transplantes.
 
----
+## 🎯 Problema
 
-## **Project Overview**  
+O transporte de órgãos para transplantes exige um controle rigoroso de condições ambientais como temperatura e umidade, além de segurança contra impactos. O método tradicional com caixas térmicas e gelo não oferece controle inteligente ou registro em tempo real das condições durante o transporte, o que pode comprometer a viabilidade do órgão.
 
-### **Problem Description**  
-The conventional method of organ transportation relies on passive thermal boxes with ice, lacking real-time monitoring and alert systems. This can lead to organ degradation due to uncontrolled environmental conditions, physical shocks, or improper handling.  
+## 🚀 Objetivo da Solução
 
-### **Solution Objective**  
-Develop a smart thermal container prototype that:  
-- Monitors **temperature, humidity, light, and impacts** in real time.  
-- Provides **visual and auditory alerts** in case of anomalies.  
-- Stores or transmits monitored data for remote tracking.  
+O objetivo é desenvolver um protótipo de recipiente térmico inteligente que simule o transporte de órgãos com as seguintes características:
+* Monitoramento em tempo real de temperatura, umidade, luminosidade e impacto.
+* Emissão de alertas sonoros e visuais em caso de anomalias.
+* Armazenamento ou transmissão dos dados monitorados.
 
----
+## ✨ Funcionalidades (Requisitos)
 
-## **Functional Requirements (RF)**  
+### Requisitos Funcionais
+* **RF01:** Medir e exibir a temperatura interna do recipiente.
+* **RF02:** Medir e exibir a umidade interna do recipiente.
+* **RF03:** Detectar e registrar movimentos bruscos ou quedas.
+* **RF04:** Detectar a abertura da tampa (mudança de luminosidade).
+* **RF05:** Exibir os dados em um display visível do lado externo.
+* **RF06:** Emitir alerta sonoro (buzzer) em situações críticas.
+* **RF07:** Alimentação autônoma via bateria ou power bank.
 
-| Code | Functional Requirement |  
-|------|------------------------|  
-| RF01 | Measure and display internal temperature. |  
-| RF02 | Measure and display internal humidity. |  
-| RF03 | Detect and log sudden movements or falls. |  
-| RF04 | Detect lid opening (light exposure change). |  
-| RF05 | Display data on an external screen. |  
-| RF06 | Emit auditory alerts (buzzer) in critical situations. |  
-| RF07 | Autonomous power supply via battery or power bank. |  
+### Requisitos Não Funcionais
+* **RNF01:** O sistema deve operar por ao menos 4 horas sem recarga.
+* **RNF02:** A interface deve ser de fácil leitura e operação.
+* **RNF03:** Os sensores devem ter tempo de resposta rápido e precisão adequada.
+* **RNF04:** Os componentes devem estar bem fixados e protegidos contra possíveis movimentos bruscos.
+* **RNF05:** O recipiente deve manter isolamento térmico adequado (simulado).
 
----
+## 🛠️ Hardware Utilizado
 
-## **Non-Functional Requirements (RNF)**  
+O núcleo do sistema é a placa **BitDogLab com Raspberry Pi Pico W**, que processa os dados dos sensores e gerencia os atuadores.
 
-| Code | Non-Functional Requirement |  
-|------|---------------------------|  
-| RNF01 | Operate for at least 4 hours without recharge. |  
-| RNF02 | User-friendly interface for medical personnel. |  
-| RNF03 | High-precision sensors with fast response time. |  
-| RNF04 | Secure component fixation to withstand movement. |  
-| RNF05 | Adequate thermal insulation (simulated). |  
-
----
-
-## **Materials List**  
-
-### 🧾 Tabela 3 - Lista de Materiais 
 | Item | Quantidade | Descrição |
-|------|------------|-----------|
-| Caixa térmica de isopor (8 a 12L) | 1 | Recipiente base com isolamento térmico |
-| Placa BitDogLab com Raspberry Pi Pico W | 1 | Microcontrolador com periféricos integrados (OLED, buzzer, joystick, botões, LED RGB) |
-| Sensor de Temperatura e Pressão BMP280 | 1 | Sensor externo conectado via placa adaptadora I2C |
-| Sensor de Umidade e Temperatura AHT10 | 1 | Sensor externo conectado via placa adaptadora I2C |
-| Sensor de Luminosidade BH1750 | 1 | Sensor externo conectado via placa adaptadora I2C |
-| Acelerômetro e Giroscópio MPU6050 | 1 | Sensor externo conectado via placa adaptadora I2C |
-| Servo motor 9g SG90 | 1 | Atuador externo conectado via placa adaptadora I2C |
-| Teclado matricial 4x4 | 1 | Interface externa conectada via conector IDC direto |
-| Placa para SDCARD SPI | 1 | Módulo externo conectado via conector IDC direto |
-| Placa extensora I2C com 8 conectores XH | 1 | Permite conexão simultânea de até 7 sensores I2C |
-| Interface DVI/HDMI para BitDogLab | 1 | Conexão direta via conector IDC (2x7 pinos) |
-| Cabos customizados XH I2C | 9 | Para conexão dos sensores externos à BitDogLab |
-| Cooler pequeno (5V) | 1 | Simulação de refrigeração ativa (opcional) |
-| Fonte de energia (power bank ou bateria Li-ion) | 1 | Alimentação portátil para o sistema |
-| Fios jumper e materiais de fixação | Diversos | Para ligações e montagem interna |  
+| --- | :---: | --- |
+| Caixa térmica de isopor (8 a 12L) | 1 | Recipiente base com isolamento térmico. |
+| Placa BitDogLab com Raspberry Pi Pico W | 1 | Microcontrolador com periféricos integrados. |
+| Sensor de Temperatura e Pressão BMP280 | 1 | Sensor externo conectado via placa adaptadora I2C. |
+| Sensor de Umidade e Temperatura AHT10 | 1 | Sensor externo conectado via placa adaptadora I2C. |
+| Sensor de Luminosidade BH1750 | 1 | Sensor externo conectado via placa adaptadora I2C. |
+| Acelerômetro e Giroscópio MPU6050 | 1 | Sensor externo conectado via placa adaptadora I2C. |
+| Servo motor 9g SG90 | 1 | Atuador externo conectado via placa adaptadora I2C. |
+| Teclado matricial 4x4 | 1 | Interface externa conectada via conector IDC direto. |
+| Placa para SDCARD SPI | 1 | Módulo externo conectado via conector IDC direto. |
+| Placa extensora I2C com 8 conectores XH | 1 | Permite conexão simultânea de até 7 sensores I2C. |
+| Fonte de energia (power bank ou bateria Li-ion) | 1 | Alimentação portátil para o sistema. |
 
----
+## 👥 Autores
 
-## **Project Structure**  
-
-### **Key Features**  
-✅ **Real-Time Monitoring**: Sensors track temperature, humidity, light, and impacts.  
-✅ **Alert System**: Buzzer and LED alerts for critical deviations.  
-✅ **Data Logging**: Stores or transmits data for remote supervision.  
-✅ **Autonomous Operation**: Battery-powered for portability.  
-
-### **System Workflow**  
-1. **Sensors** collect environmental and motion data.  
-2. **BitDogLab (RP2040)** processes data and triggers alerts if needed.  
-3. **OLED Display** shows real-time parameters.  
-4. **Wi-Fi Connectivity** (optional) enables remote monitoring.  
-
----
-
-## **Images & Schematics**  
-
-### **Prototype Diagram**  
-<img width="2160" height="1185" alt="Image" src="https://github.com/user-attachments/assets/a7d93e48-f0f1-4ec6-9928-3e1170a4e038" />
-
----
-
-## **References**  
-- **Organ Procurement and Transplantation Network (OPTN)** – Guidelines on organ transport.  
-- **World Health Organization (WHO)** – Global standards for medical logistics.  
-- **Al-Fuqaha, A. et al. (2015)** – IoT enabling technologies.  
-- **Gubbi, J. et al. (2013)** – IoT applications in healthcare.  
-- **Tanenbaum, A. & Wetherall, D. (2021)** – Computer networks for embedded systems.  
-
----
-
-## **License**  
-This project is licensed under the **[MIT License](LICENSE)**.  
-
----  
+* Giovana Ferreira Santos
+* Filipe Alves de Sousa
