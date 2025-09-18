@@ -1,6 +1,6 @@
 # BioSmartCooler: Recipiente Inteligente para Transporte de Órgãos
 
-Bem-vindo ao repositório oficial do projeto **BioSmartCooler**! Este espaço documenta a jornada de desenvolvimento de um recipiente térmico inteligente, projetado para revolucionar o transporte de órgãos para transplantes através da tecnologia de sistemas embarcados e IoT.
+Bem-vindo ao repositório oficial do projeto **BioSmartCooler**! Este espaço documenta a jornada de desenvolvimento de um recipiente térmico inteligente, projetado para o transporte de órgãos através da tecnologia de sistemas embarcados e IoT.
 
 Nosso objetivo é criar uma solução que monitore em tempo real as condições vitais para a preservação de órgãos, oferecendo segurança, rastreabilidade e contribuindo para aumentar as taxas de sucesso dos transplantes.
 
