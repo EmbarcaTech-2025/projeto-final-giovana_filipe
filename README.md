@@ -4,6 +4,10 @@ Bem-vindo ao repositório oficial do projeto **BioSmartCooler**! Este espaço do
 
 Nosso objetivo é criar uma solução que monitore em tempo real as condições vitais para a preservação de órgãos, oferecendo segurança, rastreabilidade e contribuindo para aumentar as taxas de sucesso dos transplantes.
 
+## Vídeo do projeto:
+
+https://www.youtube.com/watch?v=xI2SOimQrlM
+
 ## 📂 Estrutura do Projeto
 
 Este repositório está organizado em etapas, cada uma representando uma fase crucial do desenvolvimento, desde a concepção inicial até os ajustes finos de comunicação e prototipagem. Navegue pelas pastas para encontrar a documentação, os códigos e os diagramas específicos de cada fase.
